@@ -1,0 +1,371 @@
+\chapter{Classes / Data Classes in Python (3.7+)}
+
+\section{Introduction}
+
+Object-oriented programming (OOP) is a software design paradigm in which programs are structured around \emph{objects} that combine data and behavior. In Python, object-oriented design is supported through the use of \emph{classes}, which serve as the fundamental mechanism for defining new object types.
+
+\subsection{Classes and Objects}
+
+A \emph{class} in Python is a user-defined type that acts as a blueprint for creating objects. It specifies:
+\begin{itemize}
+    \item the data an object stores, and
+    \item the operations an object can perform.
+\end{itemize}
+
+An \emph{object} (also called an \emph{instance}) is a concrete realization of a class. Each instance has its own state while sharing behavior defined by the class.
+
+Conceptually, a class represents an abstraction of a real or conceptual entity, while objects represent individual realizations of that abstraction.
+
+\subsection{Attributes}
+
+Anything accessed using dot notation in Python is called an \emph{attribute}. Attributes fall into two primary categories:
+
+\subsubsection{Instance Attributes}
+
+\emph{Instance attributes} store data that are specific to a particular object. They are typically initialized using the class initializer method and accessed through the instance.
+
+Instance attributes represent the \emph{state} of an object.
+
+\subsubsection{Class Attributes}
+
+\emph{Class attributes} belong to the class itself rather than to any specific instance. They are shared by all instances of the class and are commonly used to store constants or configuration values relevant to the entire type.
+
+\subsection{Methods}
+
+A \emph{method} is a function defined within a class that operates on objects of that class.
+
+\subsubsection{Instance Methods}
+
+\emph{Instance methods} define behavior that operates on a specific object. They receive the instance as their first parameter, conventionally named \texttt{self}, which provides access to the attributes of the object and other methods.
+
+\subsubsection{Class Methods}
+
+\emph{Class methods} operate on the class itself rather than on individual instances. They receive the class as their first parameter, conventionally named \texttt{cls}, and are often used as alternative constructors or for behavior related to the type as a whole.
+
+\subsubsection{Static Methods}
+
+\emph{Static methods} are functions that are logically associated with a class but do not operate on either an instance or the class itself. They are primarily used for organizational clarity and namespacing.
+
+\subsection{Special (Dunder) Methods}
+
+Python classes may define \emph{special methods}, commonly called \emph{dunder methods} (from ``\textbf{d}ouble \textbf{under}score''). These methods enable classes to integrate with Python’s built-in language features.
+
+Examples include methods that control object construction, string representation, comparison, and arithmetic behavior.
+
+\subsection{Properties}
+
+A \emph{property} is a managed attribute that allows the method logic to be accessed using attribute syntax. Properties enable controlled access to internal state while preserving a clean and stable public interface.
+
+Properties are commonly used to enforce invariants, compute derived values, or manage side effects without changing the way client code accesses the attribute.
+
+\subsection{Encapsulation and Information Hiding}
+
+Encapsulation is a core principle of object-oriented design. In Python, encapsulation is achieved through convention rather than enforced access modifiers.
+
+\begin{itemize}
+    \item Public attributes form the intended interface of the class.
+    \item Attributes prefixed with a single underscore indicate internal implementation details.
+    \item Attributes with double leading underscores are name-mangled to avoid accidental collisions in subclasses.
+\end{itemize}
+
+These conventions communicate intent and support maintainable, well-structured designs.
+
+\subsection{Abstraction}
+
+A class defines an abstraction by exposing \emph{what} an object does rather than \emph{how} it does it. Well-designed classes hide implementation details and present a clear, coherent interface, allowing internal changes without affecting external users.
+
+\subsection{Inheritance and Polymorphism}
+
+Classes may inherit from other classes, allowing behavior and structure to be reused and extended. Through inheritance and shared interfaces, Python supports polymorphism: different objects may respond to the same method call in different ways.
+
+Polymorphism enables flexible and extensible software designs that can evolve without extensive modification of existing code.
+
+\subsection{Design Perspective}
+
+In Python, classes are first-class objects, and the language provides considerable flexibility in how object-oriented principles are applied. This flexibility places greater responsibility on the programmer to use classes thoughtfully and to design interfaces that emphasize clarity, cohesion, and maintainability.
+
+When used appropriately, classes serve as the primary unit of abstraction in object-oriented software design, enabling complex systems to be decomposed into understandable, reusable, and testable components.
+
+\section{Implementation by Example}
+
+The following is intended to take you through the \textit{do's and don'ts} of class design \ldots from classic Python implementation through today's best principles and practices.
+
+\subsection{A Simple Example: The \texttt{Graybody} Class}
+
+To illustrate these concepts concretely, consider the following Python class (Listing \ref{lst:simple_python_class}), which models an idealized physical concept from thermal radiation theory: a \emph{graybody}. A graybody is characterized by two fundamental properties: its absolute temperature and its emissivity.
+
+\begin{listing}[H]
+\caption{A simple Python class representing a graybody radiator defined by its properties; absolute temperature and emissivity.  The \textit{instance attributes} are directly accessed in the test harness via dot (.) notation, a violation of one of the core principles of traditional object-oriented design.}
+\label{lst:simple_python_class}
+\inputminted{python}{code/simple_python_class.py}
+\end{listing}
+
+\begin{listing}[H]
+\caption{The standard output as it appears after execution of Listing \ref{lst:simple_python_class}.}
+\label{lst:simple_python_class_console_output}
+\begin{minted}[linenos=false]{console}
+Absolute temperature = 300 [K]
+Emissivity = 0.6
+Absolute temperature = 280 [K]
+Emissivity = 0.75
+\end{minted}
+\end{listing}
+
+\subsubsection{Class Definition and Initialization}
+
+The \texttt{Graybody} class defines a new object type with two instance attributes:
+
+\begin{itemize}
+    \item \texttt{absolute\_temperature}, representing the thermodynamic temperature of the object in Kelvin, and
+    \item \texttt{emissivity}, a dimensionless quantity (between 0 and 1) that defines the object's efficiency of emission as a blackbody radiator.
+\end{itemize}
+
+These attributes are initialized using the class’s initializer method:
+
+\begin{quote}
+\texttt{\_\_init\_\_(self, absolute\_temperature, emissivity)}
+\end{quote}
+
+The initializer is a special (dunder) method that is automatically invoked when a new instance of the class is created (Line 15). Within this method, the instance attributes are created and assigned using the \texttt{self} reference. Each instance of \texttt{Graybody} therefore maintains its own independent state.
+
+\subsubsection{Object Representation}
+
+The class defines a \texttt{\_\_repr\_\_} method, which controls how instances of the class are represented as strings. This method returns a human-readable description of the object that includes its emissivity and absolute temperature.
+
+Providing a meaningful representation is an important design practice, as it improves debuggability and makes objects easier to inspect when printed or viewed interactively.
+
+\subsubsection{Object Equality}
+
+The \texttt{\_\_eq\_\_} method defines how two \texttt{Graybody} objects are compared for equality. In this implementation, two objects are considered equal if and only if:
+
+\begin{itemize}
+    \item both objects are instances of the \texttt{Graybody} class, and
+    \item their corresponding instance attributes have equal values.
+\end{itemize}
+
+There are different approaches to assessing equality, this is just one example.
+
+If the object being compared is not a \texttt{Graybody}, the method returns \texttt{NotImplemented}, allowing Python to handle the comparison appropriately. This behavior is a key aspect of writing robust and interoperable comparison methods.
+
+\vspace{1em}
+\textbf{SIDE NOTE:}\\
+What does returning \texttt{NotImplemented} do?
+
+\texttt{NotImplemented} is a special singleton object built into Python. It means ``I don’t know how to perform this operation with the given operand types.''  It is not
+
+\begin{itemize}
+    \item an exception
+    \item the same as \texttt{None}
+    \item an error value
+\end{itemize}
+
+You return it, you do not raise it. It roughly behaves as:
+
+\begin{itemize}
+    \item Call a.\_\_eq\_\_(b)
+    \item If it returns \texttt{NotImplemented}, call b.\_\_eq\_\_(a)
+    \item If that returns \texttt{NotImplemented}, then falls back to a default (usually \texttt{False} for \text{==})
+\end{itemize}
+
+So \texttt{NotImplemented} enables cooperative comparison.
+
+\subsubsection{Encapsulation and Direct Attribute Access}
+
+In this example, the instance attributes \texttt{absolute\_temperature} and \texttt{emissivity} are public and accessed directly. This is intentional and may be appropriate for a simple data-centric class.
+
+The main execution block demonstrates that:
+\begin{itemize}
+    \item instance attributes can be read using dot notation, and
+    \item instance attributes can be modified after object creation.
+\end{itemize}
+
+Each assignment updates the internal state of the object without creating a new instance.
+
+\subsubsection{Design Discussion}
+
+The \texttt{Graybody} class illustrates several important object-oriented design principles:
+
+\begin{itemize}
+    \item The class serves as an abstraction of a physical concept.
+    \item Related data are grouped into a cohesive unit.
+    \item Behavior related to representation and comparison is defined alongside the data.
+\end{itemize}
+
+At the same time, this example intentionally omits additional constraints or validation logic. In a more robust design, one might enforce valid ranges for emissivity or restrict temperature values using properties. Such enhancements will be introduced incrementally throughout the remainder of this narrative.
+
+This example demonstrates how even a small class can encapsulate meaning, support clear semantics, and participate naturally in Python’s object model.
+
+Modifications will now be introduced to enforce more traditional object-oriented design principles. These principles may not be considered necessary by many, with the above being considered Python idiomatic, but for the remainder of this narrative, the goal will be considered.
+
+\subsection{Instance Attribute Privacy}
+
+Listing \ref{lst:simple_python_class_with_getters_setters_classic} shows the addition of getter and setter methods to access and mutate the instance attributes.  In the test harness, the methods are called using traditional function calling syntax, that is using parameter lists.
+
+While this is a step toward a more traditionally accepted object-oriented paradigm, this does not prevent direct access of the attributes, allowing the object instance to be mutated directly.
+
+This approach also adds a level of complexity, the use of parameter lists for access and mutation, that removes some of the elegance and clarity of the previously shown dot (.) notation for attribute access.
+
+\begin{listing}[H]
+\caption{The same simple Python class depicted in Listing \ref{lst:simple_python_class} with the addition of Java-styled getter and setter methods for access and mutation of the instance attributes. Notice that this does nothing to prevent the direct access of these attributes external to the instantiated object using the same dot (.) notation.}
+\label{lst:simple_python_class_with_getters_setters_classic}
+\inputminted{python}{code/simple_python_class_with_getters_setters_classic.py}
+\end{listing}
+
+\begin{listing}[H]
+\caption{The standard output as it appears after execution of Listing \ref{lst:simple_python_class_with_getters_setters_classic}.}
+\label{lst:simple_python_class_with_getters_setters_classic_console_output}
+\begin{minted}[linenos=false]{console}
+Absolute temperature = 300 [K]
+Emissivity = 0.6
+Absolute temperature = 280 [K]
+Emissivity = 0.75
+\end{minted}
+\end{listing}
+
+Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_bad} renames the getter and setter methods so that they appear more like the direct attribute access of Listing \ref{lst:simple_python_class}.  This does introduce an issue, the getter and setter method have the same name as the instance attributes that they are intended to address, possibly leading to confusion, but more importantly if misused (by omission of the parameter list) then one is again simply direct accessing the attributes.  Although Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_bad_console_output} shows what appears to be the correct output, this is not due to the expected behavior, namely the use of the getter/setter methods.
+
+\begin{listing}[H]
+\caption{Modifications to Listing \ref{lst:simple_python_class_with_getters_setters_classic} renames the getter and setter methods to give the appearance of direct attribute access, presumably relying on method overloading.  Note that when the parameter lists are removed in the test harness, the expected output is achieved in Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_bad_console_output}.  This is not for the right reasons; it is simply using the same dot (.) access used in Listing \ref{lst:simple_python_class}, not the accessor and mutator methods.}
+\label{lst:simple_python_class_with_getters_setters_with_attributes_bad}
+\inputminted{python}{code/simple_python_class_with_getters_setters_with_attributes_bad.py}
+\end{listing}
+
+\begin{listing}[H]
+\caption{The standard output as it appears after execution of Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_bad}.}
+\label{lst:simple_python_class_with_getters_setters_with_attributes_bad_console_output}
+\begin{minted}[linenos=false]{console}
+Absolute temperature = 300 [K]
+Emissivity = 0.6
+Absolute temperature = 280 [K]
+Emissivity = 0.75
+\end{minted}
+\end{listing}
+
+As mentioned previously, encapsulation is a core principle of object-oriented design. In Python, encapsulation is achieved through convention rather than enforced access modifiers. Attributes prefixed with a single underscore indicate internal implementation details as a suggestion to the programmer/user of the class or module.
+
+Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_worse} prefixes the internal attributes with single underscores.  This helps to discourage direct access to these attributes by reminding the user that these are intended to be for internal use only, and that access should occur using the provided dot (.) notation mechanism.
+
+Something has gone ``horribly'' wrong here.  The use of \texttt{g.absolute\_temperature} and \texttt{g.emissivity} in Lines 31 and 32 now refers to the instance methods.  The assignments on Lines 34 and 35 define new instance attributes (very bad).  The apparently same access to \texttt{g.absolute\_temperature} and \texttt{g.emissivity} in Lines 36 and 37, as previously attempted in Lines 31 and 32, now accesses these new instance attributes and seems to work correctly, but it clearly has not.
+
+None of this is good, but it clearly points out the need to be careful.
+
+\begin{listing}[H]
+\caption{Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_bad} is modified in an attempt to use encapsulation by convention, namely the use of the single underscore prefix to indicate internal use only for the instance attributes.  The output from the test harness is shown in Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_worse_console_output}.}
+\label{lst:simple_python_class_with_getters_setters_with_attributes_worse}
+\inputminted{python}{code/simple_python_class_with_getters_setters_with_attributes_worse.py}
+\end{listing}
+
+\begin{listing}[H]
+\caption{The standard output as it appears after execution of Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_worse}.}
+\label{lst:simple_python_class_with_getters_setters_with_attributes_worse_console_output}
+\begin{minted}[linenos=false]{console}
+Absolute temperature = <bound method Graybody.absolute_temperature of Graybody with an
+emissivity of 0.6 at an absolute temperature of 300 [K]> [K]
+Emissivity = <bound method Graybody.emissivity of Graybody with an emissivity of 0.6 at an
+absolute temperature of 300 [K]>
+Absolute temperature = 280 [K]
+Emissivity = 0.75
+\end{minted}
+\end{listing}
+
+Python does provide a mechanism to allow the desired behavior through the use of decorators. The \texttt{@property} decorator turns a method into a managed attribute, allowing method logic to be accessed using attribute syntax. This decorator provides a solution for the getter methods.  The \texttt{.setter} decorator defines the write-side behavior of a property.  It specifies what happens when a value is assigned to an attribute that was created with \texttt{@property}.
+
+These decorators provide the behavior and syntax that were desired while providing true encapsulation, allowing the true tenet of object-oriented design to be achieved.
+
+\begin{listing}[H]
+\caption{The addition of the \texttt{@property} decorator to the getters allow the method logic to be accessed using attribute syntax.  The addition of the \texttt{.setter} decorators to the setter methods define the write-side behavior of a property by specifying what happens when a value is assigned to an attribute that was created with \texttt{@property}.}
+\label{lst:simple_python_class_with_getters_setters_with_attributes_better}
+\inputminted{python}{code/simple_python_class_with_getters_setters_with_attributes_better.py}
+\end{listing}
+
+\begin{listing}[H]
+\caption{The standard output as it appears after execution of Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_better}.}
+\label{lst:simple_python_class_with_getters_setters_with_attributes_better_console_output}
+\begin{minted}[linenos=false]{console}
+Absolute temperature = 300 [K]
+Emissivity = 0.6
+Absolute temperature = 280 [K]
+Emissivity = 0.75
+\end{minted}
+\end{listing}
+
+At this point, the class behaves in a manner very much in line with formal object-oriented programming design. Instance attributes are private to the object, and access to these attributes is provided using a natural attribute access syntax. This comes at the expense of some significant overhead.
+
+Beginning with Python 3.5, and fully implemented by Python 3.7 (2018), several major improvements to the language made class implementation easier, as well as syntactically clearer.  These improvements were \textit{type hinting} and the introduction of the \texttt{dataclass}.
+
+These language improvements made intent clearer, an important goal to always consider when using the Python language. Using these language improvements, the approach taken in Listing \ref{lst:simple_python_class_with_getters_setters_with_attributes_better} can be re-imagined.  Listing \ref{lst:dataclass_python_class} depicts the use of a \texttt{dataclass} and type hinting.
+
+\begin{listing}[H]
+\caption{\texttt{Graybody} class implemented using \texttt{dataclass} and type hinting, valid in Python 3.7+.}
+\label{lst:dataclass_python_class}
+\inputminted{python}{code/dataclass_python_class.py}
+\end{listing}
+
+\begin{listing}[H]
+\caption{The standard output as it appears after execution of Listing \ref{lst:dataclass_python_class}.}
+\label{lst:dataclass_python_class_console_output}
+\begin{minted}[linenos=false]{console}
+Absolute temperature = 300 [K]
+Emissivity = 0.6
+Absolute temperature = 280 [K]
+Emissivity = 0.75
+\end{minted}
+\end{listing}
+
+This provides a simple approach to class creation. The \texttt{@dataclass} decorator automatically creates the \texttt{\_\_init\_\_}, \texttt{\_\_repr\_\_}, and \texttt{\_\_eq\_\_} methods.  The type hint reminds the programmer that the values provided during object creation should, in this case, be \texttt{float} (type hinting does not enforce the data type, it just provides a hint to the programmer).  The \texttt{(frozen=true)} makes all instance attributes immutable.  If this is omitted, then instance attributes are mutable and can be changed using attribute access notation.
+
+The \texttt{@dataclass} provides an easy mechanism to type check and bounds check provided values.  This is accomplished using the \texttt{\_\_post\_init\_\_} method that is automatically executed upon instantiation of the object (see Listing \ref{lst:dataclass_python_class_with_post_init}).
+
+\begin{listing}[H]
+\caption{\texttt{Graybody} class \texttt{@dataclass} implementation implementing the \texttt{\_\_post\_init\_\_} method.}
+\label{lst:dataclass_python_class_with_post_init}
+\inputminted{python}{code/dataclass_python_class_with_post_init.py}
+\end{listing}
+
+\subsection{Pydantic (Python 3.9+)}
+
+Python 3.9+ offers the availability of Pydantic, a data-validation and settings-management library that uses Python type hints to define schemas.  Pydantic offers a high-recommended approach to class definition.
+
+At its core, Pydantic lets you define classes that:
+
+\begin{itemize}
+  \item Validate input data automatically
+  \item Parse and coerce types when reasonable
+  \item Provide clear, structured error messages
+  \item Are immutable if you want them to be
+  \item Integrate cleanly with JSON, YAML, env vars, APIs, etc.
+\end{itemize}
+
+Listing \ref{lst:pydantic_python_class} shows a full implementation for the Graybody class.
+
+\begin{listing}[H]
+\caption{\texttt{Graybody} class implementation using \texttt{pydantic}, valid in Python 3.9+.}
+\label{lst:pydantic_python_class}
+\inputminted{python}{code/pydantic_python_class.py}
+\end{listing}
+
+\begin{listing}[H]
+\caption{The standard output as it appears after execution of Listing \ref{lst:pydantic_python_class}.}
+\label{lst:pydantic_python_class_console_output}
+\begin{minted}[linenos=false]{console}
+Temperature = 300.0
+<class 'float'>
+Emissivity = 0.6
+<class 'float'>
+absolute_temperature=300.0 emissivity=0.6
+5.953740700822035
+<class 'float'>
+Temperature = 280.0
+<class 'float'>
+Emissivity = 0.75
+<class 'float'>
+absolute_temperature=280.0 emissivity=0.75
+5.270790899785112
+<class 'float'>
+[ 8.  9. 10. 11. 12. 13. 14.]
+[4.43268515 5.03025627 5.2707909  5.23982896 5.02799577 4.70996585
+ 4.34004784]
+<class 'numpy.ndarray'>
+float64
+\end{minted}
+\end{listing}

@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graybody"
+version = "0.1.0"
+description = "Graybody Model and Radiometric Utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [
+  { name = "Carl Salvaggio", email = "cnspci@rit.edu" }
+]
+
+license = { text = "MIT" }
+
+dependencies = [
+  "numpy",
+  "pydantic>=2"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-cov>=5",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourname/graybody"
+Documentation = "https://github.com/yourname/graybody"
+Source = "https://github.com/yourname/graybody"
+Issues = "https://github.com/yourname/graybody/issues"
+
+[tool.setuptools]
+packages = ["graybody"]

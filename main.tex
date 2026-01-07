@@ -1,0 +1,68 @@
+\documentclass{report}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\usepackage{geometry}
+\geometry{margin=1in}
+\setlength{\parskip}{1em}
+\setlength{\parindent}{0pt}
+
+\usepackage{fancyhdr}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\lfoot{\nouppercase{\leftmark}}
+\rfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \lfoot{\nouppercase{\leftmark}}
+  \rfoot{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0.5pt}
+}
+
+\usepackage{xcolor}
+\definecolor{mintedbg}{gray}{0.97}
+
+\usepackage[newfloat]{minted}
+\setminted{
+  breaklines,
+  fontsize=\small,
+  linenos,
+  numbersep=12pt,
+  xleftmargin=2em,
+  bgcolor=mintedbg
+}
+
+\usepackage{flafter}
+\usepackage{float}
+\floatplacement{listing}{!htbp}
+
+\usepackage{chngcntr}
+\counterwithin{figure}{chapter}
+\counterwithin{table}{chapter}
+\counterwithin{listing}{chapter}
+
+\title{IMGS.517 // Object-Oriented Software Design in Python}
+\author{Carl Salvaggio\\[0.5em]
+Rochester Institute of Technology\\
+Chester F. Carlson Center for Imaging Science\\
+Digital Imaging and Remote Sensing Laboratory}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancyplain}
+
+\tableofcontents
+\clearpage
+
+\include{sections/classes}
+
+\end{document}
