@@ -1,6 +1,6 @@
 # IMGS.517 // Object-Oriented Software Design in Python
 
-Notes and example codes
+Notes and example codes (a living document)
 
 ---
 
