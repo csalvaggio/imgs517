@@ -1,6 +1,6 @@
 # IMGS.517 // Object-Oriented Software Design in Python
 
-Notes and example codes used in the course "IMGS.517 // Object-Oriented Software Design in Python" offered by the Chester F. Carlson Center for Imaging Science at the Rochester Institute of Technology
+Notes and example codes
 
 ---
 
