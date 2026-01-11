@@ -4,7 +4,7 @@ from numpy.typing import ArrayLike
 from pydantic import BaseModel, Field, ConfigDict
 from typing import ClassVar
 
-#<blackbody:class>
+#<blackbody:class-begin>
 class Blackbody(BaseModel):
     absolute_temperature: float = Field(
         ge=0,
@@ -29,9 +29,9 @@ class Blackbody(BaseModel):
 
     def radiance(self, wavelength: ArrayLike) -> float | np.ndarray:
         return self.exitance(wavelength) / np.pi
-#<blackbody:class>
+#<blackbody:class-end>
 
-#<graybody:class>
+#<graybody:class-begin>
 class Graybody(Blackbody):
     emissivity: float = Field(ge=0.0, le=1.0)
 
@@ -39,7 +39,7 @@ class Graybody(Blackbody):
 
     def exitance(self, wavelength: ArrayLike) -> float | np.ndarray:
         return self.emissivity * super().exitance(wavelength)
-#<graybody:class>
+#<graybody:class-end>
 
 if __name__ == "__main__":
     wavelength = 10
