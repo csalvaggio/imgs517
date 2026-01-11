@@ -16,7 +16,7 @@ class Graybody(BaseModel):
     _c1: ClassVar[float] = 3.74151e08   # [W / m^2 / micron]
     _c2: ClassVar[float] = 1.43879e04   # [micron K]
 
-    def exitance(self, wavelength: ArrayLike) -> np.ndarray:
+    def exitance(self, wavelength: ArrayLike) -> float | np.ndarray:
         """Spectral exitance [W/m^2/um] for wavelength(s) in microns"""
         w = np.asarray(wavelength, dtype=np.float64)
         if np.any(w <= 0):
@@ -27,7 +27,7 @@ class Graybody(BaseModel):
         )
         return exitance.item() if exitance.ndim == 0 else exitance
 
-    def radiance(self, wavelength: ArrayLike) -> np.ndarray:
+    def radiance(self, wavelength: ArrayLike) -> float | np.ndarray:
         return self.exitance(wavelength) / np.pi
 
 if __name__ == "__main__":
