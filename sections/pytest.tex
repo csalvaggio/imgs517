@@ -1,0 +1,19 @@
+\chapter{Testing Module Code Using \texttt{pytest}}
+
+\section{Introduction}
+
+\texttt{pytest} is a popular, open-source testing framework for the Python programming language. It is designed to make writing and scaling tests easy, from simple unit tests to complex functional and API testing. 
+
+\subsection{Key Features and Benefits}
+
+\texttt{pytest} offers the following features and benefits:
+
+\begin{itemize}
+  \item Simple Syntax / \texttt{pytest} allows developers to write tests using normal Python functions and standard assert statements, reducing the boilerplate code required by other frameworks like Python's built-in unittest.
+  \item Automatic Test Discovery / It automatically identifies test files (those starting with test\_ or ending with \_test.py) and functions/methods (those starting with test\_) within a project's directories, simplifying test execution.
+  \item Detailed Assertion Introspection / When an assertion fails, pytest provides detailed and readable output showing exactly which values were expected versus what was received, which significantly aids debugging.
+  \item Fixtures / This powerful feature allows for managing test setup and teardown tasks (e.g., creating a temporary database connection or a set of user data) and sharing them across multiple tests, promoting code reuse and modularity.
+  \item Parametrization / A single test function can be run multiple times with different sets of input data using the @pytest.mark.parametrize decorator, which helps ensure broad test coverage without duplicating code.
+  \item Rich Plugin Ecosystem / \texttt{pytest} has a thriving community and over 1,300 external plugins that extend its functionality, offering integrations for code coverage (pytest-cov), asynchronous testing (pytest-asyncio), web automation (pytest-selenium), and more.
+  \item Compatibility / It can run existing test suites written with other frameworks like unittest, making it easier to migrate projects to pytest. 
+\end{itemize}
