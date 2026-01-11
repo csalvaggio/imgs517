@@ -53,12 +53,6 @@ M_{\lambda}^{\text{graybody}}(T, \lambda) = \varepsilon \, M_{\lambda}^{\text{bl
     fontsize=\small
 ]{python}{code/pydantic_python_class_refactored.py}
 
-%\begin{listing}[H]
-%\caption{Refactored software design where the \texttt{Graybody} class inherits from the physically fundamental \texttt{Blackbody} class.}
-%\label{lst:pydantic_python_class_refactored}
-%\inputminted{python}{code/pydantic_python_class_refactored.py}
-%\end{listing}
-
 \section{The \texttt{Blackbody} Base Class}
 
 The \texttt{Blackbody} class encapsulates:
@@ -69,18 +63,26 @@ The \texttt{Blackbody} class encapsulates:
   \item Radiance conversion
 \end{itemize}
 
-\begin{minted}{python}
-class Blackbody(BaseModel):
-    absolute_temperature: float = Field(
-        ge=0,
-        description="Absolute temperature in Kelvin [K]"
-    )
+\inputminted[
+  linenos,
+  breaklines,
+  breakanywhere,
+  fontsize=\small,
+  rangeregex=(?s)(?<=\#<blackbody:class>\n).*?(?=\n\#<blackbody:class>\n)
+]{python}{code/pydantic_python_class_refactored.py}
 
-    model_config = ConfigDict(frozen=True)
-
-    _c1: ClassVar[float] = 3.74151e08   # [W / m^2 / micron]
-    _c2: ClassVar[float] = 1.43879e04   # [micron K]
-\end{minted}
+%\begin{minted}{python}
+%class Blackbody(BaseModel):
+%    absolute_temperature: float = Field(
+%        ge=0,
+%        description="Absolute temperature in Kelvin [K]"
+%    )
+%
+%    model_config = ConfigDict(frozen=True)
+%
+%    _c1: ClassVar[float] = 3.74151e08   # [W / m^2 / micron]
+%    _c2: ClassVar[float] = 1.43879e04   # [micron K]
+%\end{minted}
 
 \subsection{Why This Matters}
 
