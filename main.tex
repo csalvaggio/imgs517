@@ -10,8 +10,6 @@
 \setlength{\footskip}{36pt}
 
 \usepackage{fancyhdr}
-
-\usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
 \renewcommand{\chaptermark}[1]{\markboth{#1}{}}
@@ -49,6 +47,8 @@
 \counterwithin{table}{chapter}
 \counterwithin{listing}{chapter}
 
+\usepackage{enumitem}
+
 \title{IMGS.517 // Object-Oriented Software Design in Python}
 \author{Carl Salvaggio\\[0.5em]
 Rochester Institute of Technology\\
@@ -66,5 +66,6 @@ Digital Imaging and Remote Sensing Laboratory}
 \clearpage
 
 \include{sections/classes}
+\include{sections/modules}
 
 \end{document}
