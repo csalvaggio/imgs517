@@ -4,12 +4,12 @@ from numpy.typing import ArrayLike
 from pydantic import BaseModel, Field, ConfigDict
 from typing import ClassVar
 
-class Graybody(BaseModel):
+#<blackbody:class-begin>
+class Blackbody(BaseModel):
     absolute_temperature: float = Field(
         ge=0,
         description="Absolute temperature in Kelvin [K]"
     )
-    emissivity: float = Field(ge=0.0, le=1.0)
 
     model_config = ConfigDict(frozen=True)
 
@@ -22,13 +22,24 @@ class Graybody(BaseModel):
         if np.any(w <= 0):
             raise ValueError("Wavelength(s) must be > 0 [microns]")
         exitance = (
-            self.emissivity * self._c1 / w**5 /
+            self._c1 / w**5 /
             (np.exp(self._c2 / (w * self.absolute_temperature)) - 1.0)
         )
         return exitance.item() if exitance.ndim == 0 else exitance
 
     def radiance(self, wavelength: ArrayLike) -> float | np.ndarray:
         return self.exitance(wavelength) / np.pi
+#<blackbody:class-end>
+
+#<graybody:class-begin>
+class Graybody(Blackbody):
+    emissivity: float = Field(ge=0.0, le=1.0)
+
+    model_config = ConfigDict(frozen=True)
+
+    def exitance(self, wavelength: ArrayLike) -> float | np.ndarray:
+        return self.emissivity * super().exitance(wavelength)
+#<graybody:class-end>
 
 if __name__ == "__main__":
     wavelength = 10
