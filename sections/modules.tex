@@ -1,0 +1,224 @@
+\chapter{Python Module Management}
+
+\section{Introduction}
+
+When working with Python—especially on systems with multiple Python installations
+(e.g.\ system Python, Homebrew, virtual environments)—it is common to encounter
+confusion about where packages are installed and which \texttt{pip} is being used.
+
+This tutorial explains:
+\begin{itemize}
+  \item How to list packages installed by \texttt{pip}
+  \item How to identify the active \texttt{site-packages} directory
+  \item How to verify that \texttt{pip} and \texttt{python} are correctly aligned
+\end{itemize}
+
+\section{The Golden Rule: Bind \texttt{pip} to \texttt{python}}
+
+The most reliable way to inspect installed packages is to invoke \texttt{pip}
+through the Python interpreter you intend to use:
+
+\begin{minted}{bash}
+python3 -m pip list
+\end{minted}
+
+This guarantees that the correct interpreter and its corresponding
+\texttt{site-packages} directory are used.
+
+\section{Listing Installed Packages}
+
+\subsection{Basic package listing}
+
+\begin{minted}{bash}
+python3 -m pip list
+\end{minted}
+
+Verbose output:
+
+\begin{minted}{bash}
+python3 -m pip list -v
+\end{minted}
+
+\subsection{Inspecting a single package}
+
+\begin{minted}{bash}
+python3 -m pip show numpy
+\end{minted}
+
+This reports the package version, installation location, and dependencies.
+
+\section{Finding the Active \texttt{site-packages} Directory}
+
+\subsection{Using the \texttt{site} module}
+
+\begin{minted}{bash}
+python3 -m site
+\end{minted}
+
+Typical output includes a path such as:
+
+\begin{minted}{text}
+/opt/homebrew/lib/python3.14/site-packages
+\end{minted}
+
+This directory contains the packages installed for that interpreter.
+
+\subsection{User site-packages}
+
+\begin{minted}{bash}
+python3 -m site --user-site
+\end{minted}
+
+List only user-installed packages:
+
+\begin{minted}{bash}
+python3 -m pip list --user
+\end{minted}
+
+\section{Filesystem Inspection}
+
+Once the \texttt{site-packages} directory is known, it may be inspected directly:
+
+\begin{minted}{bash}
+ls /opt/homebrew/lib/python3.14/site-packages
+\end{minted}
+
+You will typically see package directories and \texttt{.dist-info} metadata.
+
+\section{Verifying \texttt{pip} and \texttt{python} Alignment}
+
+On systems with multiple Python installations:
+
+\begin{minted}{bash}
+which python3
+python3 --version
+
+which pip
+pip --version
+\end{minted}
+
+If \texttt{pip} points to an unexpected interpreter, ignore it and always use:
+
+\begin{minted}{bash}
+python3 -m pip ...
+\end{minted}
+
+\section{Inspecting from Within Python}
+
+\subsection{Site-packages directories}
+
+\begin{minted}{python}
+import site
+site.getsitepackages()
+\end{minted}
+
+\subsection{Full import search path}
+
+\begin{minted}{python}
+import sys
+print("\n".join(sys.path))
+\end{minted}
+
+\section{Installing a Local Module}
+
+A \emph{local module} (or local package) is code that lives on your machine and
+is not installed from PyPI. Installing it makes it importable from anywhere,
+without modifying \texttt{PYTHONPATH} or using ad-hoc path hacks.
+
+\subsection{Typical local package layout}
+
+A common modern layout is:
+
+\begin{minted}{text}
+my_package/
+├── pyproject.toml
+└── src/
+    └── my_package/
+        ├── __init__.py
+        └── module.py
+\end{minted}
+
+\noindent
+The directory \texttt{my\_package/} becomes the import name:
+
+\begin{minted}{python}
+import my_package
+\end{minted}
+
+\subsection{Standard install (copies into \texttt{site-packages})}
+
+From the package root (the folder containing \texttt{pyproject.toml}):
+
+\begin{minted}{bash}
+python3 -m pip install .
+\end{minted}
+
+\noindent
+The dot (\texttt{.}) means: ``install the package defined in the current directory.''
+
+\subsection{Editable (development) install}
+
+If you are actively developing the code, use an editable install:
+
+\begin{minted}{bash}
+python3 -m pip install -e .
+\end{minted}
+
+\noindent
+Editable installs typically point imports directly at your working directory, so
+code changes take effect immediately without reinstalling.
+
+To confirm:
+
+\begin{minted}{bash}
+python3 -m pip list -v
+\end{minted}
+
+\subsection{Install from an explicit path}
+
+You do not need to \texttt{cd} into the package directory:
+
+\begin{minted}{bash}
+python3 -m pip install /full/path/to/my_package
+\end{minted}
+
+Editable from a path:
+
+\begin{minted}{bash}
+python3 -m pip install -e /full/path/to/my_package
+\end{minted}
+
+\subsection{Verify where a local package is installed}
+
+Use \texttt{pip show} to see the installation \texttt{Location} (and whether it
+is editable):
+
+\begin{minted}{bash}
+python3 -m pip show my-package-name
+\end{minted}
+
+\subsection{Uninstall}
+
+\begin{minted}{bash}
+python3 -m pip uninstall my-package-name
+\end{minted}
+
+\subsection{Common pitfalls}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Using standalone \texttt{pip}:} \texttt{pip install .} may target the wrong interpreter.
+        Prefer \texttt{python3 -m pip install .}.
+  \item \textbf{Missing \texttt{\_\_init\_\_.py}:} without it, a directory is not an importable package
+        (unless you intentionally use namespace packages).
+  \item \textbf{Confusing name vs.\ import:} the distribution name (what you pass to \texttt{pip})
+        can differ from the import name (what you write in \texttt{import ...}).
+\end{itemize}
+
+\section{Best Practices}
+
+\begin{itemize}[leftmargin=*]
+  \item Prefer \texttt{python -m pip} over standalone \texttt{pip}
+  \item Use \texttt{python -m site} to locate active \texttt{site-packages}
+  \item Use \texttt{pip show} to confirm install locations
+  \item Use editable installs (\texttt{-e}) for development workflows
+\end{itemize}
