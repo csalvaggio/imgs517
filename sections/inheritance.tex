@@ -26,7 +26,7 @@ This made the class harder to extend, reason about, and reuse.
 
 \section{Refactored Design Overview}
 
-The refactored design, shown in Listing (\ref{lst:pydantic_python_class_refactored}, explicitly separates concerns:
+The refactored design, shown in Listing \ref{lst:pydantic_python_class_refactored}, explicitly separates concerns:
 
 \begin{center}
 \begin{tabular}{ll}
@@ -44,11 +44,20 @@ This mirrors the physical relationship:
 M_{\lambda}^{\text{graybody}}(T, \lambda) = \varepsilon \, M_{\lambda}^{\text{blackbody}}(T, \lambda)
 \]
 
-\begin{listing}[H]
-\caption{Refactored software design where the \texttt{Graybody} class inherits from the physically fundamental \texttt{Blackbody} class.}
+\captionof{listing}{Refactored software design where the \texttt{Graybody} class inherits from the physically fundamental \texttt{Blackbody} class.}
 \label{lst:pydantic_python_class_refactored}
-\inputminted{python}{code/pydantic_python_class_refactored.py}
-\end{listing}
+\inputminted[
+    linenos,
+    breaklines,
+    breakanywhere,
+    fontsize=\small
+]{python}{code/pydantic_python_class_refactored.py}
+
+%\begin{listing}[H]
+%\caption{Refactored software design where the \texttt{Graybody} class inherits from the physically fundamental \texttt{Blackbody} class.}
+%\label{lst:pydantic_python_class_refactored}
+%\inputminted{python}{code/pydantic_python_class_refactored.py}
+%\end{listing}
 
 \section{The \texttt{Blackbody} Base Class}
 
