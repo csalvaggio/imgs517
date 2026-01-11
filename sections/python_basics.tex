@@ -1,0 +1,191 @@
+\chapter{Python Language Fundamentals for C++ Programmers}
+
+\section{Purpose and Audience}
+
+This chapter introduces the Python programming language for students who already have experience with a compiled, statically typed language such as C++. It is written specifically for IMGS.517, where the goal is not to teach programming from scratch, but to reframe existing programming knowledge in a Pythonic context.
+
+At this stage of the course, we intentionally avoid user-defined classes and object-oriented design. Those topics are treated in depth later. Instead, this chapter focuses on the core language features that students must be fluent with before meaningful object-oriented Python can be written.
+
+The emphasis is on how Python code executes, how data and control flow are expressed, idiomatic constructs that replace common C++ patterns, and reading and understanding real Python code.
+
+\section{The Python Execution Model}
+
+Python is an interpreted, dynamically typed language. Unlike C++, Python code is executed by an interpreter at runtime rather than compiled ahead of time into machine code.
+
+Key implications include the absence of an explicit compile step, immediate detection of syntax errors, and the fact that many type-related errors occur at runtime rather than compile time. This execution model strongly supports exploratory programming, interactive development, and rapid iteration, all of which are common in imaging science workflows.
+
+\section{Everything Is an Object}
+
+In Python, \emph{everything is an object}. There is no distinction between primitive types and user-defined types.
+
+\begin{minted}{python}
+x = 42
+y = 3.14
+z = "thermal infrared"
+\end{minted}
+
+Each of these objects has a type (\texttt{type(x)}), an identity (\texttt{id(x)}), and associated behavior in the form of methods.
+
+\begin{minted}{python}
+x.bit_length()
+z.upper()
+\end{minted}
+
+In C++, integers and strings are fundamentally different categories of entities. In Python, they are simply different objects that support different interfaces.
+
+\section{Names, Objects, and Dynamic Typing}
+
+Python variables are not typed storage locations. Instead, they are names that refer to objects.
+
+\begin{minted}{python}
+a = 10
+b = a
+a = 20
+\end{minted}
+
+After this code executes, \texttt{a} refers to a new object with value 20, while \texttt{b} still refers to the original object with value 10. This model is closer to reference semantics in C++ than to value semantics.
+
+\subsection{Type Hints}
+
+Python supports optional type annotations to improve readability and tooling.
+
+\begin{minted}{python}
+def planck_radiance(wavelength: float, temperature: float) -> float:
+    ...
+\end{minted}
+
+Type hints are not enforced at runtime. Instead, they act as documentation and enable static analysis tools. In IMGS.517, type hints are encouraged to improve clarity and maintainability.
+
+\section{Branching and Conditional Logic}
+
+Python uses indentation rather than braces to define code blocks.
+
+\begin{minted}{python}
+if temperature > 300:
+    state = "hot"
+elif temperature > 273:
+    state = "warm"
+else:
+    state = "cold"
+\end{minted}
+
+Unlike C++, parentheses around conditions are optional, braces are not allowed, and indentation is syntactically meaningful. Incorrect indentation is therefore a syntax error rather than a style issue.
+
+\section{Truthiness and Boolean Context}
+
+Python objects define implicit boolean behavior, often referred to as \emph{truthiness}. The values \texttt{0}, \texttt{0.0}, \texttt{None}, and empty containers such as \texttt{[]}, \texttt{\{\}}, and \texttt{""} all evaluate to \texttt{False}.
+
+\begin{minted}{python}
+if measurements:
+    analyze(measurements)
+\end{minted}
+
+This replaces explicit size or null checks that are common in C++ and results in more concise and readable code.
+
+\section{Iteration and Repetition}
+
+\subsection{\texttt{for} Loops}
+
+Python \texttt{for} loops iterate directly over elements rather than indices.
+
+\begin{minted}{python}
+for value in values:
+    print(value)
+\end{minted}
+
+This closely mirrors C++ range-based \texttt{for} loops, but in Python it is the dominant and idiomatic form of iteration.
+
+\subsection{The \texttt{range} Object}
+
+\begin{minted}{python}
+for i in range(0, 10, 2):
+    print(i)
+\end{minted}
+
+The \texttt{range} object is lazy, meaning that it does not allocate a list in memory. Instead, it produces values on demand and is commonly used for controlled iteration.
+
+\section{Functions as First-Class Objects}
+
+Functions in Python are objects and can be treated like any other value.
+
+\begin{minted}{python}
+def square(x):
+    return x * x
+
+f = square
+result = f(4)
+\end{minted}
+
+Functions can be assigned to variables, passed as arguments, and returned from other functions. This capability underpins many advanced Python patterns used later in the course.
+
+\section{Pythonic Language Constructs}
+
+\subsection{List Comprehensions}
+
+List comprehensions provide a compact way to express map-and-filter operations.
+
+\begin{minted}{python}
+squares = [x*x for x in range(10)]
+even_squares = [x*x for x in range(10) if x % 2 == 0]
+\end{minted}
+
+These constructs replace many explicit loop-and-append patterns and should be used when they improve clarity rather than obscuring intent.
+
+\subsection{Tuple Packing and Unpacking}
+
+Python supports automatic packing and unpacking of tuples.
+
+\begin{minted}{python}
+point = (10.0, 20.0)
+x, y = point
+\end{minted}
+
+Functions commonly return multiple values using this mechanism.
+
+\begin{minted}{python}
+def bounds(data):
+    return min(data), max(data)
+
+low, high = bounds(values)
+\end{minted}
+
+This is similar to structured bindings in C++, but more idiomatic and widely used in Python.
+
+\subsection{\texttt{with} Statements and Context Managers}
+
+The \texttt{with} statement provides deterministic setup and cleanup behavior.
+
+\begin{minted}{python}
+with open("data.txt") as f:
+    lines = f.readlines()
+\end{minted}
+
+This guarantees that the file is closed when the block exits, even if an error occurs. Conceptually, this serves the same purpose as RAII in C++.
+
+\section{Exceptions and Error Handling}
+
+Python uses exceptions extensively rather than error codes.
+
+\begin{minted}{python}
+try:
+    value = int(text)
+except ValueError:
+    value = 0
+\end{minted}
+
+The preferred Python style is to attempt an operation and handle failure if it occurs, rather than defensively checking all conditions beforehand.
+
+\section{Modules and Imports}
+
+Python code is organized into modules rather than header and source files.
+
+\begin{minted}{python}
+import numpy as np
+from math import sin, cos
+\end{minted}
+
+Imports are executable statements and follow runtime rules, which has important implications for program structure and performance.
+
+\section{Summary and Course Context}
+
+In IMGS.517, Python serves as a high-level language for scientific computing, a foundation for later object-oriented design, and a gateway to the broader scientific Python ecosystem. Mastery of these core language features is essential before introducing classes, inheritance, and more advanced design patterns in subsequent chapters.

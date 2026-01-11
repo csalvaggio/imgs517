@@ -9,7 +9,6 @@ This chapter explains the motivation, structure, and benefits of refactoring a s
 \section{Original Design}
 
 The original implementation in \ref{subsec:pydantic} modeled a graybody directly:
-
 \begin{itemize}
   \item Temperature and emissivity were defined together.
   \item The Blackbody constants and Planck’s Law were embedded in the same class.
@@ -26,7 +25,7 @@ This made the class harder to extend, reason about, and reuse.
 
 \section{Refactored Design Overview}
 
-The refactored design, shown in Listing \ref{lst:pydantic_python_class_refactored}, explicitly separates concerns:
+The refactored design explicitly separates concerns:
 
 \begin{center}
 \begin{tabular}{ll}
@@ -44,15 +43,6 @@ This mirrors the physical relationship:
 M_{\lambda}^{\text{graybody}}(T, \lambda) = \varepsilon \, M_{\lambda}^{\text{blackbody}}(T, \lambda)
 \]
 
-\captionof{listing}{Refactored software design where the \texttt{Graybody} class inherits from the physically fundamental \texttt{Blackbody} class.}
-\label{lst:pydantic_python_class_refactored}
-\inputminted[
-    linenos,
-    breaklines,
-    breakanywhere,
-    fontsize=\small
-]{python}{code/pydantic_python_class_refactored.py}
-
 \section{The \texttt{Blackbody} Base Class}
 
 The \texttt{Blackbody} class encapsulates:
@@ -68,22 +58,9 @@ The \texttt{Blackbody} class encapsulates:
   breaklines,
   breakanywhere,
   fontsize=\small,
-  rangeregex=(?s)\#<graybody:validation>.*?\#</graybody:validation>,
-  stripall
+  rangestartafterstring=\#<blackbody:class-begin>,
+  rangestopbeforestring=\#<blackbody:class-end>
 ]{python}{code/pydantic_python_class_refactored.py}
-
-%\begin{minted}{python}
-%class Blackbody(BaseModel):
-%    absolute_temperature: float = Field(
-%        ge=0,
-%        description="Absolute temperature in Kelvin [K]"
-%    )
-%
-%    model_config = ConfigDict(frozen=True)
-%
-%    _c1: ClassVar[float] = 3.74151e08   # [W / m^2 / micron]
-%    _c2: ClassVar[float] = 1.43879e04   # [micron K]
-%\end{minted}
 
 \subsection{Why This Matters}
 
@@ -101,40 +78,130 @@ The \texttt{Blackbody} class encapsulates:
 \section{The \texttt{Graybody} Subclass}
 
 The \texttt{Graybody} class inherits all blackbody behavior and modifies only what is physically different:
-
-\begin{minted}{python}
-class Graybody(Blackbody):
-    emissivity: float = Field(ge=0.0, le=1.0)
-
-    model_config = ConfigDict(frozen=True)
-
-    def exitance(self, wavelength: ArrayLike) -> float | np.ndarray:
-        return self.emissivity * super().exitance(wavelength)
-\end{minted}
+\inputminted[
+  linenos,
+  breaklines,
+  breakanywhere,
+  fontsize=\small,
+  rangestartafterstring=\#<graybody:class-begin>,
+  rangestopbeforestring=\#<graybody:class-end>
+]{python}{code/pydantic_python_class_refactored.py}
 
 \subsection{Why Override Only \texttt{exitance}?}
 
-This is a key design decision:
+At first glance, it may seem that a graybody model should override both \texttt{exitance()} and \texttt{radiance()}. However, doing so would obscure the underlying physics and introduce unnecessary duplication.
 
+From a physical point of view, emissivity modifies the \emph{emitted power} at the surface. That quantity to modify is the spectral exitance, $M_{\lambda}$.
+
+Radiance is not an independent physical model, but rather a geometric conversion:
+\[
+L_{\lambda} = \frac{M_{\lambda}}{\pi}.
+\]
+
+Because this geometric relationship holds for both blackbodies and graybodies, there is no need to redefine \texttt{radiance()} in the subclass. By overriding only \texttt{exitance()}, the graybody automatically inherits a correct radiance computation.
+
+From a software-design perspective, this choice has several important consequences:
 \begin{itemize}
-  \item Emissivity affects \emph{exitance}, not the Planck function itself
-  \item Radiance remains a geometric conversion:
-  \[
-  L_{\lambda} = \frac{M_{\lambda}}{\pi}
-  \]
-  \item By overriding \texttt{exitance()}, radiance is automatically correct
+  \item The blackbody implementation of Planck’s Law remains the single source of truth.
+  \item The graybody class introduces exactly one new physical concept, the emissivity.
+  \item The higher-level behavior (radiance) is derived consistently from the lower-level behavior (exitance).
 \end{itemize}
 
-This ensures that:
+This design choice makes it possible to express the graybody model as a simple, physically meaningful transformation:
+\[
+M_{\lambda}^{\text{graybody}} = \varepsilon M_{\lambda}^{\text{blackbody}}.
+\]
+
+In the implementation, this transformation is achieved by reusing the blackbody computation rather than re-implementing it. The mechanism that enables this reuse while maintaining the correct method resolution of the method and future extensibility is the Python \texttt{super()} function, which is examined in detail in the following section.
+
+\subsection{What \texttt{super()} Does Here (and Why It Matters)}
+
+In the refactored design, the \texttt{Graybody} subclass overrides \texttt{exitance()} to apply emissivity scaling, while relying on the \texttt{Blackbody} implementation for the actual Planck-law computation.
+
+The call to \texttt{super()} is the critical piece that makes this design both correct and maintainable.
+
+\subsubsection{Method lookup and the class hierarchy}
+
+When Python evaluates a called method like:
+\begin{minted}{python}
+g.exitance(wavelength)
+\end{minted}
+
+it does \emph{dynamic dispatch}, that is, it looks up \texttt{exitance} starting from the runtime type of \texttt{g}. If \texttt{g} is a \texttt{Graybody}, Python finds \texttt{Graybody.exitance()} first and uses it.
+
+Inside \texttt{Graybody.exitance()}, we still need the original blackbody computation. We could write:
+\begin{minted}{python}
+Blackbody.exitance(self, wavelength)
+\end{minted}
+
+but this hard-codes the parent class name and bypasses Python's more general method-resolution rules (discussed below). Instead, \texttt{super()} provides a robust way to say ``Call the next implementation of \texttt{exitance} in the inheritance chain (the method resolution order).''
+
+So in this case:
+\[
+\texttt{super().exitance(wavelength)} \equiv
+\text{``evaluate } \texttt{Blackbody.exitance(self, wavelength)} \text{''}
+\]
+
+\subsubsection{\texttt{super()} is not ``the parent class''}
+
+It is tempting to think of \texttt{super()} as meaning ``call my parent,'' but what it actually does is:
 \begin{itemize}
-  \item Physics is applied in the correct order
-  \item There is no duplicated code
-  \item Errors cannot creep in via inconsistent scaling
+  \item it returns a \emph{proxy object} that performs attribute lookups
+  \item starting \emph{after} the current class (\texttt{Graybody})
+  \item following the Method Resolution Order (MRO).
 \end{itemize}
 
-\section{Benefits of the Refactor}
+NOTE: Method Resolution Order (MRO) for any class can be found by typing \texttt{Graybody.mro()}
 
-\subsection{1. Physical Fidelity}
+For simple single inheritance (\texttt{Graybody(Blackbody)}), the MRO is:
+\[
+\texttt{Graybody} \rightarrow \texttt{Blackbody} \rightarrow \texttt{BaseModel} \rightarrow \texttt{object}
+\]
+
+where \texttt{super().exitance(...)} resolves to \texttt{Blackbody.exitance(...)} in this case.
+
+This distinction becomes essential if you later introduce multiple inheritance or mixins (\textit{e.g.} adding a logging mixin or unit-handling mixin). In those cases, ``the next method'' may not literally be the direct parent, but \texttt{super()} still does the right thing.
+
+\subsubsection{Why \texttt{super()} is better than calling \texttt{Blackbody.exitance} directly}
+
+Using \texttt{super()} provides several concrete advantages:
+\begin{enumerate}
+  \item \textbf{Avoids duplicating Planck’s Law} / The blackbody computation lives in exactly one place.
+  \item \textbf{Prevents name coupling} / If the base class is renamed or reorganized (or if you insert an intermediate class), \texttt{super()} keeps working without rewriting method calls.
+  \item \textbf{Supports cooperative multiple inheritance} / If future designs add mixins (\textit{e.g.} \texttt{UnitAware}, \texttt{CachedExitance}, \texttt{ValidatedWavelength}), \texttt{super()} enables each layer to contribute behavior in a controlled order.
+  \item \textbf{Preserves consistent validation behavior} / In this project, wavelength checking and numeric conversion happen in the base class. Calling that method through \texttt{super()} ensures graybody behavior stays consistent with blackbody behavior.
+\end{enumerate}
+
+\subsubsection{The scientific interpretation in one line}
+
+The software expression:
+\[
+\texttt{return self.emissivity * super().exitance(wavelength)}
+\]
+
+is a direct transcription of the physics:
+\[
+M_{\lambda}^{\text{graybody}} = \varepsilon \, M_{\lambda}^{\text{blackbody}}
+\]
+
+In other words, \texttt{super()} is what enforces the rule that a graybody is computed \emph{by reusing} the blackbody model and then applying emissivity as a scaling factor, rather than re-implementing the blackbody physics in multiple places.
+
+\subsubsection{A brief note on \texttt{self} binding}
+
+One subtle point: \texttt{super().exitance(wavelength)} returns a \emph{bound method}. Even though the function is defined on \texttt{Blackbody}, it is called with the \emph{same instance} (\texttt{self}), which is a \texttt{Graybody} object at runtime.
+
+That means:
+\begin{itemize}
+  \item \texttt{Blackbody.exitance} reads \texttt{self.absolute\_temperature} from the \texttt{Graybody} instance
+  \item any state or fields inherited into \texttt{Graybody} remain accessible
+  \item the computation happens once and is then scaled by emissivity
+\end{itemize}
+
+This is exactly the intended behavior desired, namely that a \texttt{Graybody} \emph{is still} a temperature-defined radiator, with additional emissivity behavior layered on top.
+
+\section{Benefits of Refactor and Inheritance-Based Design}
+
+\subsection{Physical Fidelity}
 
 The class hierarchy mirrors the underlying physics:
 \begin{itemize}
@@ -142,7 +209,7 @@ The class hierarchy mirrors the underlying physics:
   \item Inheritance expresses this relationship directly
 \end{itemize}
 
-\subsection{2. Single Source of Truth}
+\subsection{Single Source of Truth}
 
 \begin{itemize}
   \item Planck’s Law appears in exactly one place
@@ -150,7 +217,20 @@ The class hierarchy mirrors the underlying physics:
   \item Numerical behavior is consistent across models
 \end{itemize}
 
-\subsection{3. Extensibility}
+\subsection{Behavioral Composition via Inheritance}
+
+The refactor does more than separate data and equations—it enables \emph{behavioral composition}. The graybody model is constructed by layering new behavior (emissivity scaling) on top of existing behavior (blackbody radiation), rather than by copying or re-implementing that behavior.
+
+This composition is achieved through:
+\begin{itemize}
+  \item method overriding at the appropriate physical level (\texttt{exitance})
+  \item reuse of base-class logic via \texttt{super()}
+  \item reliance on Python’s method resolution order to manage delegation
+\end{itemize}
+
+As a result, each class contributes exactly the behavior it is responsible for—no more, no less—while remaining compatible with future extensions.
+
+\subsection{Extensibility}
 
 This design naturally supports future extensions:
 \begin{itemize}
@@ -159,19 +239,19 @@ This design naturally supports future extensions:
   \item \texttt{Surface} or \texttt{Material} wrappers
 \end{itemize}
 
-All can reuse the same blackbody core.
+All can reuse the same blackbody core, with cooperative method resolution ensuring that each layer contributes behavior in a predictable and physically meaningful order.
 
-\subsection{4. Testability}
+\subsection{Testability}
 
 \begin{itemize}
   \item \texttt{Blackbody} can be tested against tabulated Planck values
   \item \texttt{Graybody} tests reduce to simple scaling checks
-  \item Bugs are easier to localize
+  \item Bugs are easier to locate
 \end{itemize}
 
-\subsection{5. Conceptual Clarity}
+\subsection{Conceptual Clarity}
 
-For students, collaborators, and future maintainers:
+For everyone (students, collaborators, and future maintainers)
 \begin{itemize}
   \item The class names teach the physics
   \item The code reads like the governing equations
@@ -180,6 +260,6 @@ For students, collaborators, and future maintainers:
 
 \section{Conclusion}
 
-The refactoring from a monolithic \texttt{Graybody} class to a \texttt{Blackbody} base class with a \texttt{Graybody} subclass is not merely a stylistic improvement—it is a \emph{physics-aware software design}.
+Refactoring from a monolithic \texttt{Graybody} class to a \texttt{Blackbody} base class with a \texttt{Graybody} subclass is not just a stylistic improvement—it is a \emph{physics-aware software design}.
 
-It improves correctness, maintainability, extensibility, and readability while remaining fully compatible with vectorized NumPy workflows and Pydantic validation. Most importantly, it ensures that the structure of the code reflects the structure of the science.
+The refactor improves correctness, maintainability, extensibility, and readability while remaining fully compatible with vectorized NumPy workflows and Pydantic validation. Most importantly, it ensures that the structure of the code reflects the structure of the science.
