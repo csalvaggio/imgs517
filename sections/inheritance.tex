@@ -1,0 +1,173 @@
+\chapter{Inheritance}
+
+\section{Introduction}
+
+In thermal infrared modeling, a \emph{graybody} is not a fundamentally new physical model; it is a \emph{blackbody with reduced emissivity}. This distinction is subtle, but important, when translating physics into software design.
+
+This chapter explains the motivation, structure, and benefits of refactoring a single \texttt{Graybody} class into a base \texttt{Blackbody} class with a derived \texttt{Graybody} subclass, using Pydantic models and NumPy for numerical evaluation.
+
+\section{Original Design}
+
+The original implementation in \ref{subsec:pydantic} modeled a graybody directly:
+
+\begin{itemize}
+  \item Temperature and emissivity were defined together.
+  \item The Blackbody constants and Planck’s Law were embedded in the same class.
+  \item All spectral logic lived in \texttt{Graybody}.
+\end{itemize}
+
+While this was functionally correct, this design implicitly \emph{conflated two physical concepts}:
+\begin{enumerate}
+  \item The universal physics of blackbody radiation
+  \item The material-specific scaling introduced by the emissivity
+\end{enumerate}
+
+This made the class harder to extend, reason about, and reuse.
+
+\section{Refactored Design Overview}
+
+The refactored design, shown in Listing (\ref{lst:pydantic_python_class_refactored}, explicitly separates concerns:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Class & Responsibility \\
+\midrule
+\texttt{Blackbody} & Implements Planck’s Law and radiometric physics \\
+\texttt{Graybody} & Applies emissivity scaling to blackbody emission \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This mirrors the physical relationship:
+\[
+M_{\lambda}^{\text{graybody}}(T, \lambda) = \varepsilon \, M_{\lambda}^{\text{blackbody}}(T, \lambda)
+\]
+
+\begin{listing}[H]
+\caption{Refactored software design where the \texttt{Graybody} class inherits from the physically fundamental \texttt{Blackbody} class.}
+\label{lst:pydantic_python_class_refactored}
+\inputminted{python}{code/pydantic_python_class_refactored.py}
+\end{listing}
+
+\section{The \texttt{Blackbody} Base Class}
+
+The \texttt{Blackbody} class encapsulates:
+\begin{itemize}
+  \item Absolute temperature validation
+  \item Planck constants
+  \item Spectral exitance computation
+  \item Radiance conversion
+\end{itemize}
+
+\begin{minted}{python}
+class Blackbody(BaseModel):
+    absolute_temperature: float = Field(
+        ge=0,
+        description="Absolute temperature in Kelvin [K]"
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+    _c1: ClassVar[float] = 3.74151e08   # [W / m^2 / micron]
+    _c2: ClassVar[float] = 1.43879e04   # [micron K]
+\end{minted}
+
+\subsection{Why This Matters}
+
+\begin{itemize}
+  \item The blackbody model is \emph{universal} - it does not depend on material.
+  \item It can now be reused for:
+    \begin{itemize}
+      \item Reference radiance calculations
+      \item Calibration targets
+      \item Validation and unit tests
+    \end{itemize}
+  \item The class name directly reflects the physics being implemented.
+\end{itemize}
+
+\section{The \texttt{Graybody} Subclass}
+
+The \texttt{Graybody} class inherits all blackbody behavior and modifies only what is physically different:
+
+\begin{minted}{python}
+class Graybody(Blackbody):
+    emissivity: float = Field(ge=0.0, le=1.0)
+
+    model_config = ConfigDict(frozen=True)
+
+    def exitance(self, wavelength: ArrayLike) -> float | np.ndarray:
+        return self.emissivity * super().exitance(wavelength)
+\end{minted}
+
+\subsection{Why Override Only \texttt{exitance}?}
+
+This is a key design decision:
+
+\begin{itemize}
+  \item Emissivity affects \emph{exitance}, not the Planck function itself
+  \item Radiance remains a geometric conversion:
+  \[
+  L_{\lambda} = \frac{M_{\lambda}}{\pi}
+  \]
+  \item By overriding \texttt{exitance()}, radiance is automatically correct
+\end{itemize}
+
+This ensures that:
+\begin{itemize}
+  \item Physics is applied in the correct order
+  \item There is no duplicated code
+  \item Errors cannot creep in via inconsistent scaling
+\end{itemize}
+
+\section{Benefits of the Refactor}
+
+\subsection{1. Physical Fidelity}
+
+The class hierarchy mirrors the underlying physics:
+\begin{itemize}
+  \item A graybody \emph{is a} blackbody with emissivity
+  \item Inheritance expresses this relationship directly
+\end{itemize}
+
+\subsection{2. Single Source of Truth}
+
+\begin{itemize}
+  \item Planck’s Law appears in exactly one place
+  \item Constants are defined once
+  \item Numerical behavior is consistent across models
+\end{itemize}
+
+\subsection{3. Extensibility}
+
+This design naturally supports future extensions:
+\begin{itemize}
+  \item \texttt{SelectiveGraybody} (spectral emissivity)
+  \item \texttt{DirectionalGraybody}
+  \item \texttt{Surface} or \texttt{Material} wrappers
+\end{itemize}
+
+All can reuse the same blackbody core.
+
+\subsection{4. Testability}
+
+\begin{itemize}
+  \item \texttt{Blackbody} can be tested against tabulated Planck values
+  \item \texttt{Graybody} tests reduce to simple scaling checks
+  \item Bugs are easier to localize
+\end{itemize}
+
+\subsection{5. Conceptual Clarity}
+
+For students, collaborators, and future maintainers:
+\begin{itemize}
+  \item The class names teach the physics
+  \item The code reads like the governing equations
+  \item Intent is obvious without comments
+\end{itemize}
+
+\section{Conclusion}
+
+The refactoring from a monolithic \texttt{Graybody} class to a \texttt{Blackbody} base class with a \texttt{Graybody} subclass is not merely a stylistic improvement—it is a \emph{physics-aware software design}.
+
+It improves correctness, maintainability, extensibility, and readability while remaining fully compatible with vectorized NumPy workflows and Pydantic validation. Most importantly, it ensures that the structure of the code reflects the structure of the science.
