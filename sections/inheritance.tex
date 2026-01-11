@@ -68,7 +68,8 @@ The \texttt{Blackbody} class encapsulates:
   breaklines,
   breakanywhere,
   fontsize=\small,
-  rangeregex=(?s)(?<=\#<blackbody:class>\n).*?(?=\n\#<blackbody:class>\n)
+  rangeregex=(?s)\#<graybody:validation>.*?\#</graybody:validation>,
+  stripall
 ]{python}{code/pydantic_python_class_refactored.py}
 
 %\begin{minted}{python}
