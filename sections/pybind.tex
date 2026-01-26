@@ -31,15 +31,15 @@ The repository is structured as a standard Python package with a native extensio
 
 \begin{verbatim}
 primes/
-├── CMakeLists.txt
-├── pyproject.toml
-├── src/
-│   └── primes/
-│       ├── __init__.py
-│       ├── primes.cpp
-│       └── bindings.cpp
-└── tests/
-    └── test_primes.py
+|-- CMakeLists.txt
+|-- pyproject.toml
+|-- src/
+|   |-- primes/
+|       |-- __init__.py
+|       |-- primes.cpp
+|       |-- bindings.cpp
+|-- tests/
+    |-- test_primes.py
 \end{verbatim}
 
 The separation between \texttt{primes.cpp} and \texttt{bindings.cpp} is intentional:
@@ -56,7 +56,8 @@ The prime number logic is written as a small, self-contained C++ API.
 
 \subsection{Header and Implementation}
 
-\inputminted{cpp}{code/primes/src/primes_module.cpp}
+\inputminted{cpp}{code/primes/src/primes.h}
+\inputminted{cpp}{code/primes/src/primes.cpp}
 
 \subsection{Design Notes}
 
@@ -80,7 +81,7 @@ The bridge between C++ and Python is implemented using \texttt{pybind11}.
 
 \subsection{Binding Code}
 
-\inputminted{cpp}{src/primes/bindings.cpp}
+\inputminted{cpp}{code/primes/src/bindings.cpp}
 
 \subsection{How This Works}
 
@@ -115,11 +116,11 @@ Modern Python packaging no longer relies on \texttt{setup.py} for native extensi
 
 \subsection{CMake Configuration}
 
-\inputminted{cmake}{CMakeLists.txt}
+\inputminted{cmake}{code/primes/CMakeLists.txt}
 
 \subsection{Python Project Configuration}
 
-\inputminted{toml}{pyproject.toml}
+\inputminted{toml}{code/primes/pyproject.toml}
 
 \subsection{Key Concepts}
 
@@ -150,12 +151,6 @@ python3 -m pip install --user -e . --force-reinstall
 \section{Using the Module from Python}
 
 Once built, the module behaves exactly like a pure Python package.
-
-\subsection{Example Usage}
-
-\inputminted{python}{tests/test_primes.py}
-
-\subsection{Interactive Session}
 
 \begin{minted}{python}
 >>> import primes
@@ -190,9 +185,9 @@ In imaging and remote sensing applications, this same pattern is used to:
   \item Forgetting to force a rebuild after changing C++ code
 \end{itemize}
 
-Encouraging students to diagnose these issues early helps them develop practical software engineering skills alongside algorithmic understanding.
+Encouraging students to diagnose these issues early helps them develop practical software engineering skills along with algorithmic understanding.
 
-\section{Pedagogical Takeaways}
+\section{Takeaways}
 
 This example reinforces several IMGS.517 themes:
 \begin{itemize}
@@ -202,15 +197,4 @@ This example reinforces several IMGS.517 themes:
   \item Performance-aware system architecture
 \end{itemize}
 
-By the end of this chapter, students should understand not just \emph{how} to wrap C++ with Python, but \emph{when} and \emph{why} this design pattern is appropriate in scientific and imaging systems.
-
-\section{Extensions}
-
-This framework can be extended to:
-\begin{itemize}
-  \item Expose C++ classes instead of free functions
-  \item Bind Eigen or OpenCV data structures
-  \item Enable multi-threading with \texttt{py::gil\_scoped\_release}
-\end{itemize}
-
-These topics naturally lead into advanced performance engineering and hybrid system design.
+The reader should now understand not just \emph{how} to wrap C++ with Python, but \emph{when} and \emph{why} this design pattern is appropriate in scientific and imaging systems.
