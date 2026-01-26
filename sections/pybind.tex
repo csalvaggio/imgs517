@@ -20,10 +20,9 @@ This example is designed to illustrate several best practices that align with IM
   \item Clear separation of \emph{algorithm} (C++) and \emph{interface} (Python)
   \item Modern CMake-based builds
   \item Editable Python installs for rapid development
-  \item Version-controlled code that is \emph{live-linked} into this document via GitHub and Overleaf
 \end{itemize}
 
-All code shown in this chapter is included directly from the course GitHub repository. When the repository is updated, the documentation updates automatically.
+All code shown in this chapter is included directly from the course GitHub repository.
 
 \section{Project Structure}
 
@@ -32,14 +31,15 @@ The repository is structured as a standard Python package with a native extensio
 \begin{verbatim}
 primes/
 |-- CMakeLists.txt
+|-- LICENSE
+|-- primes/
+|   |-- __init__.py
 |-- pyproject.toml
+|-- README.md
 |-- src/
-|   |-- primes/
-|       |-- __init__.py
-|       |-- primes.cpp
-|       |-- bindings.cpp
-|-- tests/
-    |-- test_primes.py
+|   |-- bindings.cpp
+|   |-- primes.cpp
+|   |-- primes.h
 \end{verbatim}
 
 The separation between \texttt{primes.cpp} and \texttt{bindings.cpp} is intentional:
@@ -63,11 +63,11 @@ The prime number logic is written as a small, self-contained C++ API.
 
 This implementation exposes two functions:
 \begin{itemize}
-  \item \texttt{is\_prime(int n)} — tests a single value
-  \item \texttt{primes\_up\_to(int n)} — generates all primes up to a limit
+  \item \texttt{is\_prime(int value)} — tests a single value
+  \item \texttt{nth\_prime(int N)} — generates all primes up to a limit
 \end{itemize}
 
-These functions are deliberately written without any Python knowledge. They operate entirely in standard C++ types:
+These functions are deliberately written without any Python knowledge. They operate entirely in standard C++ type(s)U:
 \begin{itemize}
   \item \texttt{int}
   \item \texttt{std::vector<int>}
