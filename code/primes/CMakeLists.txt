@@ -18,7 +18,7 @@ execute_process(
 set(pybind11_DIR "${pybind11_dir}")
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(_primes src/primes_module.cpp)
+pybind11_add_module(_primes src/primes.cpp src/bindings.cpp)
 
 install(TARGETS _primes
   LIBRARY DESTINATION primes
