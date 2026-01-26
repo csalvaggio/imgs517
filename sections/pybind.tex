@@ -1,0 +1,216 @@
+\chapter{Wrapping C++ with Python Using \texttt{pybind11}: A Prime Number Case Study}
+
+\section{Motivation}
+
+One of Python’s greatest strengths is its expressiveness and developer productivity. One of its weaknesses is raw computational performance for tight numerical loops and algorithmically intensive workloads.
+
+Modern scientific and engineering workflows often resolve this tension by:
+\begin{itemize}
+  \item Prototyping and orchestration in Python
+  \item Implementing performance-critical components in C++
+  \item Exposing those components back to Python as native extension modules
+\end{itemize}
+
+This chapter walks through a complete, minimal, and pedagogically clean example of this workflow using \texttt{pybind11}. We will wrap a C++ prime number implementation as a Python module that can be imported and used exactly like a pure Python package.
+
+\section{Design Goals}
+
+This example is designed to illustrate several best practices that align with IMGS.517:
+\begin{itemize}
+  \item Clear separation of \emph{algorithm} (C++) and \emph{interface} (Python)
+  \item Modern CMake-based builds
+  \item Editable Python installs for rapid development
+  \item Version-controlled code that is \emph{live-linked} into this document via GitHub and Overleaf
+\end{itemize}
+
+All code shown in this chapter is included directly from the course GitHub repository. When the repository is updated, the documentation updates automatically.
+
+\section{Project Structure}
+
+The repository is structured as a standard Python package with a native extension:
+
+\begin{verbatim}
+primes/
+├── CMakeLists.txt
+├── pyproject.toml
+├── src/
+│   └── primes/
+│       ├── __init__.py
+│       ├── primes.cpp
+│       └── bindings.cpp
+└── tests/
+    └── test_primes.py
+\end{verbatim}
+
+The separation between \texttt{primes.cpp} and \texttt{bindings.cpp} is intentional:
+\begin{itemize}
+  \item \texttt{primes.cpp} contains \emph{pure C++ logic}
+  \item \texttt{bindings.cpp} contains \emph{Python interface code}
+\end{itemize}
+
+This mirrors real-world engineering practice and keeps the algorithm testable and reusable outside Python.
+
+\section{The C++ Prime Implementation}
+
+The prime number logic is written as a small, self-contained C++ API.
+
+\subsection{Header and Implementation}
+
+\inputminted{cpp}{code/primes/src/primes_module.cpp}
+
+\subsection{Design Notes}
+
+This implementation exposes two functions:
+\begin{itemize}
+  \item \texttt{is\_prime(int n)} — tests a single value
+  \item \texttt{primes\_up\_to(int n)} — generates all primes up to a limit
+\end{itemize}
+
+These functions are deliberately written without any Python knowledge. They operate entirely in standard C++ types:
+\begin{itemize}
+  \item \texttt{int}
+  \item \texttt{std::vector<int>}
+\end{itemize}
+
+This allows them to be reused in other C++ projects, unit-tested independently, and optimized without affecting the Python interface.
+
+\section{Creating the Python Bindings}
+
+The bridge between C++ and Python is implemented using \texttt{pybind11}.
+
+\subsection{Binding Code}
+
+\inputminted{cpp}{src/primes/bindings.cpp}
+
+\subsection{How This Works}
+
+The macro:
+\begin{verbatim}
+PYBIND11_MODULE(primes, m)
+\end{verbatim}
+declares a Python module named \texttt{primes}. The variable \texttt{m} represents the module object itself.
+
+Each call to \texttt{m.def()} exposes a C++ function as a Python-callable function:
+\begin{verbatim}
+m.def("is_prime", &is_prime, "Check if a number is prime");
+\end{verbatim}
+
+At runtime, \texttt{pybind11} automatically:
+\begin{itemize}
+  \item Converts Python integers to C++ \texttt{int}
+  \item Calls the native function
+  \item Converts the result back to a Python object
+\end{itemize}
+
+For container types such as \texttt{std::vector<int>}, \texttt{pybind11} transparently converts them into Python \texttt{list} objects.
+
+\section{Build System with CMake and \texttt{scikit-build-core}}
+
+Modern Python packaging no longer relies on \texttt{setup.py} for native extensions. Instead, we use:
+\begin{itemize}
+  \item \texttt{pyproject.toml} for Python metadata
+  \item CMake for native builds
+  \item \texttt{scikit-build-core} as the bridge between them
+\end{itemize}
+
+\subsection{CMake Configuration}
+
+\inputminted{cmake}{CMakeLists.txt}
+
+\subsection{Python Project Configuration}
+
+\inputminted{toml}{pyproject.toml}
+
+\subsection{Key Concepts}
+
+\begin{itemize}
+  \item \texttt{pybind11\_add\_module} builds a shared library that Python can import
+  \item The module name in CMake must match the name in \texttt{PYBIND11\_MODULE}
+  \item \texttt{scikit-build-core} allows \texttt{pip} to invoke CMake automatically
+\end{itemize}
+
+This gives us a fully standards-compliant Python package with a compiled backend.
+
+\section{Editable Installation for Development}
+
+To install the module in development mode:
+
+\begin{minted}{bash}
+python3 -m pip install --user -e .
+\end{minted}
+
+This creates a link between the source directory and the Python environment, so changes to the C++ or binding code only require a rebuild, not a reinstall.
+
+To force a clean rebuild:
+
+\begin{minted}{bash}
+python3 -m pip install --user -e . --force-reinstall
+\end{minted}
+
+\section{Using the Module from Python}
+
+Once built, the module behaves exactly like a pure Python package.
+
+\subsection{Example Usage}
+
+\inputminted{python}{tests/test_primes.py}
+
+\subsection{Interactive Session}
+
+\begin{minted}{python}
+>>> import primes
+>>> primes.is_prime(97)
+True
+>>> primes.primes_up_to(20)
+[2, 3, 5, 7, 11, 13, 17, 19]
+\end{minted}
+
+From the Python user’s perspective, there is no visible distinction between this module and a normal \texttt{.py} file.
+
+\section{Performance Perspective}
+
+Although this example is small, it demonstrates a powerful architectural pattern:
+\begin{itemize}
+  \item Python handles user interaction, testing, orchestration, and visualization
+  \item C++ handles algorithmically intensive computation
+\end{itemize}
+
+In imaging and remote sensing applications, this same pattern is used to:
+\begin{itemize}
+  \item Accelerate radiative transfer models
+  \item Optimize large-scale image filtering
+  \item Perform real-time sensor simulation
+\end{itemize}
+
+\section{Common Pitfalls}
+
+\begin{itemize}
+  \item Module name mismatches between CMake and \texttt{PYBIND11\_MODULE}
+  \item Missing compiler toolchains on Windows or Linux
+  \item Forgetting to force a rebuild after changing C++ code
+\end{itemize}
+
+Encouraging students to diagnose these issues early helps them develop practical software engineering skills alongside algorithmic understanding.
+
+\section{Pedagogical Takeaways}
+
+This example reinforces several IMGS.517 themes:
+\begin{itemize}
+  \item Clean interface design across language boundaries
+  \item Reproducible builds
+  \item Professional packaging practices
+  \item Performance-aware system architecture
+\end{itemize}
+
+By the end of this chapter, students should understand not just \emph{how} to wrap C++ with Python, but \emph{when} and \emph{why} this design pattern is appropriate in scientific and imaging systems.
+
+\section{Extensions}
+
+This framework can be extended to:
+\begin{itemize}
+  \item Expose C++ classes instead of free functions
+  \item Bind Eigen or OpenCV data structures
+  \item Enable multi-threading with \texttt{py::gil\_scoped\_release}
+\end{itemize}
+
+These topics naturally lead into advanced performance engineering and hybrid system design.
