@@ -71,16 +71,284 @@ else:
 
 Unlike C++, parentheses around conditions are optional, braces are not allowed, and indentation is syntactically meaningful. Incorrect indentation is therefore a syntax error rather than a style issue.
 
-\section{Truthiness and Boolean Context}
+\subsection{Truthiness and Implicit Boolean Evaluation}
 
-Python objects define implicit boolean behavior, often referred to as \emph{truthiness}. The values \texttt{0}, \texttt{0.0}, \texttt{None}, and empty containers such as \texttt{[]}, \texttt{\{\}}, and \texttt{""} all evaluate to \texttt{False}.
+In Python, conditional expressions are not limited to explicit comparisons. Many objects have an inherent \emph{truth value} that determines how they behave in a conditional context.
 
 \begin{minted}{python}
-if measurements:
-    analyze(measurements)
+values = []
+if values:
+    print("List is not empty")
+else:
+    print("List is empty")
 \end{minted}
 
-This replaces explicit size or null checks that are common in C++ and results in more concise and readable code.
+The following objects evaluate to \texttt{False}:
+\begin{itemize}
+  \item \texttt{None}
+  \item Numeric zero (\texttt{0}, \texttt{0.0})
+  \item Empty sequences (\texttt{""}, \texttt{[]}, \texttt{()})
+  \item Empty mappings (\texttt{\{\}})
+\end{itemize}
+
+All other objects evaluate to \texttt{True}. This enables expressive, readable conditions without explicit length or null checks.
+
+\subsection{Comparison Chaining}
+
+Python allows multiple comparisons to be chained in a single expression, which is evaluated from left to right.
+
+\begin{minted}{python}
+if 273 < temperature <= 300:
+    state = "warm"
+\end{minted}
+
+This is functionally equivalent to:
+
+\begin{minted}{python}
+if temperature > 273 and temperature <= 300:
+    state = "warm"
+\end{minted}
+
+This syntax has no direct analog in C++ and encourages mathematically expressive conditional logic.
+
+\subsection{The Conditional (Ternary) Expression}
+
+Python provides an inline conditional expression for simple branching.
+
+\begin{minted}{python}
+state = "hot" if temperature > 300 else "cold"
+\end{minted}
+
+This serves a similar role to the C++ ternary operator \texttt{?:}, but uses a more readable, English-like syntax.
+
+\subsection{Identity vs.\ Equality}
+
+Python distinguishes between \emph{equality} and \emph{identity}.
+
+\begin{minted}{python}
+a = [1, 2, 3]
+b = [1, 2, 3]
+
+if a == b:
+    print("Same values")
+
+if a is b:
+    print("Same object")
+\end{minted}
+
+The \texttt{==} operator compares values, while \texttt{is} tests whether both variables refer to the same object in memory. This distinction is particularly important when checking for \texttt{None}:
+
+\begin{minted}{python}
+if result is None:
+    print("No result returned")
+\end{minted}
+
+\subsection{Short-Circuit Evaluation}
+
+Boolean operators in Python use short-circuit semantics.
+
+\begin{minted}{python}
+if sensor is not None and sensor.reading() > threshold:
+    print("Threshold exceeded")
+\end{minted}
+
+The second condition is evaluated only if the first is \texttt{True}. This is commonly used to guard against null references or expensive function calls.
+
+\subsection{Membership Testing}
+
+Python provides a dedicated operator for testing set, list, or dictionary membership.
+
+\begin{minted}{python}
+if key in dictionary:
+    print("Key exists")
+\end{minted}
+
+This is more expressive and often more efficient than manual iteration.
+
+\subsection{Exception-Based Branching}
+
+In Python, control flow is often expressed using exceptions rather than explicit conditionals.
+
+\begin{minted}{python}
+try:
+    value = int(text)
+except ValueError:
+    value = 0
+\end{minted}
+
+This pattern, known as \emph{EAFP} (``Easier to Ask Forgiveness than Permission''), contrasts with the more common C++ \emph{LBYL} (``Look Before You Leap'') style of explicit precondition checks.
+
+\section{Structural Pattern Matching (\texttt{match}/\texttt{case})}
+
+Introduced in Python 3.10, \emph{structural pattern matching} allows programs to branch based on the \emph{structure and content} of data rather than just its value. While it serves a role similar to \texttt{switch} in C++, it is significantly more expressive and supports destructuring, type matching, and conditional guards.
+
+\subsection{Basic Value Matching}
+
+The simplest form matches literal values.
+
+\begin{minted}{python}
+match state:
+    case "hot":
+        action = "cooling"
+    case "warm":
+        action = "monitor"
+    case "cold":
+        action = "heating"
+    case _:
+        action = "unknown"
+\end{minted}
+
+The wildcard pattern \texttt{\_} matches anything and serves the same role as \texttt{default} in a C++ \texttt{switch} statement.
+
+\subsection{Execution Semantics}
+
+Pattern matching follows these rules:
+\begin{itemize}
+  \item Cases are tested from top to bottom
+  \item The first matching case is executed
+  \item Only one case executes (no fall-through)
+  \item The wildcard \texttt{\_} matches any value
+\end{itemize}
+
+This eliminates the need for \texttt{break} statements that are required in many C++ \texttt{switch} constructs.
+
+\subsection{Sequence and Tuple Destructuring}
+
+Patterns can match structured data and bind parts of it to variables.
+
+\begin{minted}{python}
+point = (3, 0)
+
+match point:
+    case (0, 0):
+        location = "origin"
+    case (x, 0):
+        location = "x-axis"
+    case (0, y):
+        location = "y-axis"
+    case (x, y):
+        location = "plane"
+\end{minted}
+
+This resembles tuple unpacking, but is integrated directly into control flow.
+
+\subsection{Type-Based Matching}
+
+Patterns can branch based on object type and simultaneously extract values.
+
+\begin{minted}{python}
+def describe(value):
+    match value:
+        case int(x):
+            return f"Integer: {x}"
+        case float(x):
+            return f"Float: {x}"
+        case str(x):
+            return f"String: {x}"
+        case _:
+            return "Unknown type"
+\end{minted}
+
+This provides a structured alternative to chains of \texttt{isinstance()} checks.
+
+\subsection{Mapping (Dictionary) Patterns}
+
+Dictionaries can be matched by keys and values.
+
+\begin{minted}{python}
+record = {"type": "sensor", "id": 42, "value": 3.7}
+
+match record:
+    case {"type": "sensor", "value": v}:
+        print(f"Sensor reading: {v}")
+    case {"type": "actuator", "id": i}:
+        print(f"Actuator ID: {i}")
+\end{minted}
+
+Only the specified keys must be present; extra keys are ignored by default.
+
+\subsection{Guards (Conditional Patterns)}
+
+Cases can include additional conditions using an \texttt{if} guard.
+
+\begin{minted}{python}
+match temperature:
+    case t if t > 300:
+        state = "hot"
+    case t if t > 273:
+        state = "warm"
+    case _:
+        state = "cold"
+\end{minted}
+
+This allows patterns to be refined with runtime conditions, combining structural and logical matching.
+
+\subsection{Class Patterns and Attribute Matching}
+
+Patterns can match against object attributes, enabling declarative object inspection.
+
+\begin{minted}{python}
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+p = Point(0, 5)
+
+match p:
+    case Point(x=0, y=y):
+        print(f"On Y-axis at {y}")
+    case Point(x=x, y=0):
+        print(f"On X-axis at {x}")
+\end{minted}
+
+This is conceptually similar to destructuring records or structs in modern C++.
+
+\subsection{OR Patterns}
+
+Multiple patterns can be combined using the \texttt{|} operator.
+
+\begin{minted}{python}
+match command:
+    case "start" | "run" | "go":
+        action = "begin"
+    case "stop" | "halt":
+        action = "end"
+\end{minted}
+
+This avoids repetitive case blocks and improves readability.
+
+\subsection{Common Pitfall: Name Capture vs.\ Constants}
+
+Unqualified names in patterns are treated as \emph{capture variables}, not constants.
+
+\begin{minted}{python}
+RED = 1
+
+match value:
+    case RED:      # This captures value into RED, not a comparison
+        print("Always matches")
+\end{minted}
+
+To match constants, use literals or qualify the name:
+
+\begin{minted}{python}
+import colors
+
+match value:
+    case colors.RED:
+        print("Matched red")
+\end{minted}
+
+\subsection{When to Use \texttt{match}}
+
+Structural pattern matching is particularly effective when:
+\begin{itemize}
+  \item Branching on structured data (tuples, dictionaries, objects)
+  \item Replacing long \texttt{if/elif} chains
+  \item Implementing parsers, protocol handlers, or command dispatch systems
+  \item Working with heterogeneous data types
+\end{itemize}
 
 \section{Iteration and Repetition}
 
@@ -103,6 +371,162 @@ for i in range(0, 10, 2):
 \end{minted}
 
 The \texttt{range} object is lazy, meaning that it does not allocate a list in memory. Instead, it produces values on demand and is commonly used for controlled iteration.
+
+\subsection{\texttt{while} Loops}
+
+A \texttt{while} loop repeats as long as a condition remains true. Unlike a \texttt{for} loop, which iterates over a collection, a \texttt{while} loop is \emph{condition-driven}.
+
+\begin{minted}{python}
+count = 0
+while count < 5:
+    print(count)
+    count += 1
+\end{minted}
+
+This form closely mirrors the semantics of a C++ \texttt{while} loop and is typically used when:
+\begin{itemize}
+  \item The number of iterations is not known in advance
+  \item Loop termination depends on runtime conditions or user input
+\end{itemize}
+
+Care must be taken to ensure the loop condition eventually becomes false, or an infinite loop will occur.
+
+\subsection{\texttt{break} and \texttt{continue}}
+
+Python supports structured loop control using \texttt{break} and \texttt{continue}, similar to C++.
+
+\paragraph{\texttt{break}}
+Immediately exits the loop.
+
+\begin{minted}{python}
+for value in values:
+    if value < 0:
+        break
+    print(value)
+\end{minted}
+
+\paragraph{\texttt{continue}}
+Skips the rest of the current iteration and proceeds to the next one.
+
+\begin{minted}{python}
+for value in values:
+    if value == 0:
+        continue
+    print(10 / value)
+\end{minted}
+
+These constructs are most useful when filtering, validating, or early-terminating iteration based on runtime conditions.
+
+\subsection{\texttt{for--else} and \texttt{while--else}}
+
+Python provides a unique feature not found in C++: an optional \texttt{else} clause on loops. The \texttt{else} block executes only if the loop completes \emph{without encountering a \texttt{break}}.
+
+\begin{minted}{python}
+for value in values:
+    if value == target:
+        print("Found target")
+        break
+else:
+    print("Target not found")
+\end{minted}
+
+This pattern is particularly elegant for search operations, avoiding the need for external flags or state variables.
+
+\subsection{Parallel Iteration with \texttt{zip}}
+
+The \texttt{zip} function allows multiple sequences to be iterated in lockstep.
+
+\begin{minted}{python}
+names = ["Alice", "Bob", "Charlie"]
+scores = [85, 92, 78]
+
+for name, score in zip(names, scores):
+    print(name, score)
+\end{minted}
+
+This construct is conceptually similar to iterating over multiple containers in parallel in C++, but Python provides this as a built-in, readable abstraction.
+
+\subsection{Indexed Iteration with \texttt{enumerate}}
+
+The \texttt{enumerate} function produces both an index and a value during iteration.
+
+\begin{minted}{python}
+for index, value in enumerate(values):
+    print(index, value)
+\end{minted}
+
+This is the Pythonic alternative to the traditional C++ index-based loop:
+
+\begin{minted}{cpp}
+for (size_t i = 0; i < values.size(); ++i)
+\end{minted}
+
+\subsection{Comprehensions as Implicit Loops}
+
+List, set, and dictionary comprehensions provide a compact syntax for transforming or filtering data. These are \emph{expressions}, not statements, but they embed iteration logic.
+
+\paragraph{List Comprehension}
+\begin{minted}{python}
+squares = [x * x for x in range(10)]
+\end{minted}
+
+\paragraph{Filtered Comprehension}
+\begin{minted}{python}
+evens = [x for x in range(20) if x % 2 == 0]
+\end{minted}
+
+Comprehensions emphasize a \emph{declarative style} of programming: specifying what should be produced rather than how to loop.
+
+\subsection{Generator-Based Iteration}
+
+Generators produce values lazily, yielding one element at a time instead of storing an entire sequence in memory.
+
+\begin{minted}{python}
+def countdown(n):
+    while n > 0:
+        yield n
+        n -= 1
+
+for value in countdown(5):
+    print(value)
+\end{minted}
+
+This is conceptually similar to writing a custom iterator class in C++, but Python provides a lightweight, readable syntax through the \texttt{yield} keyword.
+
+\subsection{Infinite Loops and Event Loops}
+
+Python supports intentionally infinite loops, often used in real-time systems, servers, or interactive applications.
+
+\begin{minted}{python}
+while True:
+    command = input("Enter command: ")
+    if command == "quit":
+        break
+\end{minted}
+
+This pattern is common in:
+\begin{itemize}
+  \item Event-driven programs
+  \item Embedded control systems
+  \item Network servers
+\end{itemize}
+
+The loop is explicitly terminated using \texttt{break} based on external conditions.
+
+\subsection{Functional Iteration with \texttt{map} and \texttt{filter}}
+
+Python also supports a functional style of iteration.
+
+\begin{minted}{python}
+values = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x * x, values))
+\end{minted}
+
+\begin{minted}{python}
+evens = list(filter(lambda x: x % 2 == 0, values))
+\end{minted}
+
+While powerful, these are often considered less readable than comprehensions in modern Python and are typically reserved for cases where functional composition is desirable.
 
 \section{Functions as First-Class Objects}
 
@@ -153,14 +577,133 @@ This is similar to structured bindings in C++, but more idiomatic and widely use
 
 \subsection{\texttt{with} Statements and Context Managers}
 
-The \texttt{with} statement provides deterministic setup and cleanup behavior.
+The \texttt{with} statement provides deterministic setup and cleanup behavior through the use of \emph{context managers}. A context manager is any object that implements two special methods:
+
+\begin{itemize}
+  \item \texttt{\_\_enter\_\_()} --- executed when the \texttt{with} block is entered
+  \item \texttt{\_\_exit\_\_()} --- executed when the \texttt{with} block is exited
+\end{itemize}
+
+Conceptually, this mirrors the constructor/destructor or scope-bound resource management (RAII) model in C++.
+
+\subsubsection{Execution Semantics}
+
+When Python encounters a \texttt{with} statement, the following steps occur:
+
+\begin{enumerate}
+  \item The context expression is evaluated.
+  \item Its \texttt{\_\_enter\_\_()} method is called.
+  \item The return value of \texttt{\_\_enter\_\_()} is bound to the variable after \texttt{as} (if present).
+  \item The indented block is executed.
+  \item The \texttt{\_\_exit\_\_()} method is called, even if an exception occurs in the block.
+\end{enumerate}
+
+This guarantees that cleanup logic is always executed, regardless of how the block terminates.
+
+\subsubsection{Basic Example (File Resource)}
 
 \begin{minted}{python}
 with open("data.txt") as f:
     lines = f.readlines()
 \end{minted}
 
-This guarantees that the file is closed when the block exits, even if an error occurs. Conceptually, this serves the same purpose as RAII in C++.
+Internally, this behaves approximately like:
+
+\begin{minted}{python}
+f = open("data.txt")
+try:
+    lines = f.readlines()
+finally:
+    f.close()
+\end{minted}
+
+The \texttt{with} form is preferred because it is safer, more readable, and exception-resilient.
+
+\subsubsection{Multiple Context Managers}
+
+Python allows multiple resources to be managed in a single \texttt{with} statement.
+
+\begin{minted}{python}
+with open("input.txt") as fin, open("output.txt", "w") as fout:
+    for line in fin:
+        fout.write(line.upper())
+\end{minted}
+
+Each context manager is entered from left to right and exited from right to left, mirroring stack unwinding behavior in C++.
+
+\subsubsection{Custom Context Managers}
+
+User-defined context managers can be created by defining a class that implements \texttt{\_\_enter\_\_\allowbreak()} and \texttt{\_\_exit\_\_\allowbreak()}.
+
+\begin{minted}{python}
+class Timer:
+    def __enter__(self):
+        import time
+        self.start = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        import time
+        elapsed = time.time() - self.start
+        print(f"Elapsed time: {elapsed:.3f} seconds")
+\end{minted}
+
+\begin{minted}{python}
+with Timer():
+    compute_expensive_result()
+\end{minted}
+
+This pattern is directly analogous to defining a scoped guard object in C++ whose destructor performs cleanup or logging when the scope ends.
+
+\subsubsection{Exception Handling and Suppression}
+
+The \texttt{\_\_exit\_\_()} method receives information about any exception that occurred inside the block. If it returns \texttt{True}, the exception is suppressed; otherwise, it is re-raised.
+
+\begin{minted}{python}
+class IgnoreErrors:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return True  # Suppress all exceptions
+\end{minted}
+
+This allows context managers to act as structured error-handling mechanisms in addition to resource managers.
+
+\subsubsection{Functional Context Managers}
+
+Python provides a decorator-based approach for lightweight context managers using \texttt{contextlib}.
+
+\begin{minted}{python}
+from contextlib import contextmanager
+
+@contextmanager
+def temporary_value(obj, name, value):
+    old = getattr(obj, name)
+    setattr(obj, name, value)
+    try:
+        yield
+    finally:
+        setattr(obj, name, old)
+\end{minted}
+
+\begin{minted}{python}
+with temporary_value(config, "mode", "debug"):
+    run_system()
+\end{minted}
+
+This approach provides RAII-like behavior without requiring a full class definition.
+
+\subsubsection{Common Use Cases}
+
+Context managers are commonly used for:
+\begin{itemize}
+  \item File and network resource management
+  \item Locking and synchronization (e.g., \texttt{threading.Lock})
+  \item Temporary configuration or environment changes
+  \item Performance measurement and logging
+  \item Transaction and session handling (e.g., databases)
+\end{itemize}
 
 \section{Exceptions and Error Handling}
 
