@@ -20,6 +20,7 @@ class Graybody:
 
 if __name__ == "__main__":
     g = Graybody(300, 0.6)
+    print(g)
     print(f"Temperature = {g.absolute_temperature}")
     print(f"Emissivity = {g.emissivity}")
 

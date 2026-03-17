@@ -20,7 +20,7 @@ def test_blackbody_exitance_unimodal_and_peak_near_wien(Blackbody):
     w_peak = float(w[i_peak])
 
     # Wien displacement for spectral radiance/exitance vs wavelength:
-    # lambda_max [micron] ≈ 2897.771955 / T[K]
+    # lambda_max [micron] = 2897.771955 / T[K]
     wien_umK = 2897.771955
     w_expected = wien_umK / b.absolute_temperature
 
