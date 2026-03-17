@@ -54,7 +54,7 @@ def planck_radiance(wavelength: float, temperature: float) -> float:
     ...
 \end{minted}
 
-Type hints are not enforced at runtime. Instead, they act as documentation and enable static analysis tools. In IMGS.517, type hints are encouraged to improve clarity and maintainability.
+Type hints are not enforced at runtime. Instead, they act as documentation and enable static analysis tools (\textit{e.g.} \texttt{mypy}). Type hints are encouraged to improve clarity and maintainability.
 
 \section{Branching and Conditional Logic}
 
@@ -177,6 +177,47 @@ except ValueError:
 \end{minted}
 
 This pattern, known as \emph{EAFP} (``Easier to Ask Forgiveness than Permission''), contrasts with the more common C++ \emph{LBYL} (``Look Before You Leap'') style of explicit precondition checks.
+
+Python encourages attempting an operation directly and handling failure if it occurs, rather than pre-checking conditions. This pattern (\emph{EAFP}) is often more concise, more atomic, and better aligned with Python’s dynamic and duck-typed nature. While C++ programmers often prefer explicit validation (\emph{LBYL}), Python favors clarity and correctness through exception handling, particularly when operations inherently perform their own validation.
+
+A common illustration of \emph{EAFP} involves file access. A C++ programmer might instinctively check for a file before opening it:
+
+\paragraph{LBYL (Look Before You Leap)}
+\begin{minted}{python}
+import os
+
+if os.path.exists(filename):
+    f = open(filename)
+    data = f.read()
+    f.close()
+\end{minted}
+
+While this appears safe, it introduces a subtle race condition: the file could be deleted between the call to \texttt{exists()} and the call to \texttt{open()}.
+
+\vspace{1em}
+
+Python instead encourages attempting the operation directly and handling failure if it occurs:
+
+\paragraph{EAFP (Easier to Ask Forgiveness than Permission)}
+\begin{minted}{python}
+try:
+    with open(filename) as f:
+        data = f.read()
+except FileNotFoundError:
+    data = None
+\end{minted}
+
+This approach is:
+
+\begin{itemize}
+    \item More atomic (the open operation itself determines success),
+    \item Safer in concurrent environments,
+    \item More idiomatic in Python.
+\end{itemize}
+
+The key idea is that the operation responsible for validating the resource (here, \texttt{open}) should be allowed to perform that validation, with failure handled explicitly through exception handling.
+
+\textbf{NOTE:} The Python \texttt{with} statement provides the same deterministic cleanup behavior as scope in C++, it does it explicitly, using \texttt{\_\_enter\_\_()} that runs at the start of the block, and \texttt{\_\_exit\_\_()} that runs when the block exits, whether the block exits normally or via exception, rather than through scope-based destruction.
 
 \section{Structural Pattern Matching (\texttt{match}/\texttt{case})}
 

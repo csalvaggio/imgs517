@@ -17,3 +17,335 @@
   \item Rich Plugin Ecosystem / \texttt{pytest} has a thriving community and over 1,300 external plugins that extend its functionality, offering integrations for code coverage (pytest-cov), asynchronous testing (pytest-asyncio), web automation (pytest-selenium), and more.
   \item Compatibility / It can run existing test suites written with other frameworks like unittest, making it easier to migrate projects to pytest. 
 \end{itemize}
+
+\section{How \texttt{pytest} Discovers Tests}
+
+One of the conveniences provided by \texttt{pytest} is automatic test discovery. Rather than requiring the programmer to explicitly register tests in a test suite, \texttt{pytest} searches the project directory and identifies tests based on simple naming conventions.
+
+The default discovery rules are:
+
+\begin{itemize}
+\item Test files must be named either \texttt{test\_*.py} or \texttt{*\_test.py}.
+\item Test functions must begin with the prefix \texttt{test\_}.
+\item Test classes must begin with \texttt{Test}.
+\end{itemize}
+
+When the command \texttt{pytest} is executed in the root directory of a project, \texttt{pytest} recursively searches the directory tree, identifies all files and functions matching these patterns, and automatically executes them.
+
+This convention-based approach greatly simplifies test organization. Developers can simply place their tests in appropriately named files and functions, and \texttt{pytest} will locate and execute them without requiring additional configuration.
+
+For example, running the test suite may produce output similar to the following:
+
+\begin{minted}{bash}
+$ pytest
+============================= test session starts ==============================
+platform linux -- Python 3.12.4, pytest-8.3.2, pluggy-1.5.0
+configfile: pyproject.toml
+plugins: cov-7.0.0, hypothesis-6.111.1, anyio-4.4.0, time-machine-2.15.0
+collected 36 items                                                             
+
+tests/test_api_types_shapes.py .......                                   [ 19%]
+tests/test_blackbody_core.py ...............                             [ 61%]
+tests/test_graybody_core.py ............                                 [ 94%]
+tests/test_physics_sanity.py ..                                          [100%]
+
+============================== 36 passed in 0.70s ==============================
+\end{minted}
+
+In this output, each dot indicates a passing test. A failure would instead produce a detailed traceback and assertion report identifying the exact test, line number, and failed condition.
+
+\section{Examples of \texttt{pytest} Unit Tests}
+
+The following examples are drawn directly from the test suite included with the \texttt{graybody} module used throughout this course. These tests illustrate three increasingly sophisticated uses of \texttt{pytest}:
+
+\begin{enumerate}
+\item Verifying a mathematical implementation against a known analytical expression.
+\item Testing correct behavior of object-oriented inheritance.
+\item Performing a physics-based sanity check on a numerical model.
+\end{enumerate}
+
+\subsection{Testing a Mathematical Implementation}
+
+A common form of unit test in scientific software verifies that a function correctly implements a known analytical expression. In the following example, the \texttt{exitance()} method of the \texttt{Blackbody} class is compared against the closed-form blackbody radiation equation evaluated explicitly within the test.
+
+\vspace{0.5em}
+
+From \texttt{tests/test\_blackbody\_core.py}
+\inputminted[firstline=70,lastline=75]{python}{code/graybody/tests/test_blackbody_core.py}
+
+\vspace{0.5em}
+
+This test creates a \texttt{Blackbody} object at a specified temperature and evaluates its spectral exitance at a given wavelength. The expected value is computed directly using the analytical blackbody equation and the physical constants defined in the class. The test then verifies that the value returned by the method matches the expected value using \texttt{pytest.approx()}, which allows for small numerical differences due to floating-point precision.
+
+This type of test is a classic example of a unit test: it evaluates one function, one behavior, and one known expected result. In scientific programming, such tests are particularly valuable because they tie the software implementation directly back to the governing physical equations.
+
+\subsection{Testing Object-Oriented Behavior}
+
+Unit tests are also useful for verifying that object-oriented designs behave correctly. The following test examines the relationship between the \texttt{Blackbody} and \texttt{Graybody} classes.
+
+\vspace{0.5em}
+
+From \texttt{tests/test\_graybody\_core.py}
+\inputminted[firstline=45,lastline=61]{python}{code/graybody/tests/test_graybody_core.py}
+
+\vspace{0.5em}
+
+The \texttt{Graybody} class inherits the \texttt{radiance()} method from the \texttt{Blackbody} class. However, the inherited implementation calls \texttt{self.exitance()}, which means that if the \texttt{Graybody} class overrides the \texttt{exitance()} method, the graybody version should be used automatically.
+
+The test verifies this behavior by comparing the radiance produced by a \texttt{Graybody} object with the value expected from the graybody radiation relationship:
+
+\[
+L_\lambda = \frac{\epsilon M_\lambda}{\pi}
+\]
+
+where $\epsilon$ is the emissivity and $M_\lambda$ is the spectral exitance of the equivalent blackbody.
+
+This example illustrates that unit tests can validate not only numerical correctness but also correct implementation of inheritance and polymorphism.
+
+Figure~\ref{fig:blackbody_graybody_pytest} provides a simple conceptual view of this relationship. The key idea is that although \texttt{radiance()} is inherited from \texttt{Blackbody}, the call to \texttt{self.exitance()} is resolved using the \texttt{Graybody} implementation when the object is a \texttt{Graybody}. That is precisely the behavior confirmed by the test.
+
+\vspace{2em}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  classbox/.style={
+    draw,
+    rounded corners=2pt,
+    minimum width=3.8cm,
+    minimum height=1.1cm,
+    align=center
+  },
+  methodbox/.style={
+    draw,
+    rounded corners=2pt,
+    minimum width=5.2cm,
+    minimum height=1.0cm,
+    align=center
+  },
+  >=latex
+]
+
+\node[classbox] (bb) at (0,2.2) {\texttt{Blackbody}};
+\node[classbox] (gb) at (0,0.4) {\texttt{Graybody}};
+
+\draw[->] (gb.north) -- node[right] {\small inherits from} (bb.south);
+
+\node[methodbox] (rad) at (6.2,2.2) {\texttt{radiance()} defined in \texttt{Blackbody}};
+\node[methodbox] (exit) at (6.2,0.4) {\texttt{exitance()} overridden in \texttt{Graybody}};
+
+\draw[->] (bb.east) -- (rad.west);
+\draw[->] (gb.east) -- (exit.west);
+
+\draw[->, thick] (rad.south) to[bend right=20]
+node[midway,right,align=left] {\small inherited \texttt{radiance()} calls\\[-1mm]\small \texttt{self.exitance()}} (exit.north);
+
+\end{tikzpicture}
+\caption{Conceptual relationship between the \texttt{Blackbody} and \texttt{Graybody} classes. The inherited \texttt{radiance()} method calls \texttt{self.exitance()}, so when invoked on a \texttt{Graybody} object the overridden graybody implementation is used.}
+\label{fig:blackbody_graybody_pytest}
+\end{figure}
+
+\subsection{Physics-Based Sanity Checks}
+
+Not all useful tests are based on exact equality with a known value. In scientific applications, it is often useful to verify that a numerical model exhibits the correct qualitative physical behavior. The following test provides an example of such a physics-based sanity check.
+
+\vspace{0.5em}
+
+From \texttt{tests/test\_physics\_sanity.py}
+\inputminted[firstline=10,lastline=36]{python}{code/graybody/tests/test_physics_sanity.py}
+
+\vspace{0.5em}
+
+This test evaluates the blackbody spectrum for a temperature of 300 [K] across the longwave infrared region (8--14~$\mu$m). The computed spectrum should increase toward a peak near the wavelength predicted by Wien's displacement law and then decrease afterward.
+
+The test therefore performs two checks:
+\begin{itemize}
+\item The location of the peak in the computed spectrum is close to the value predicted by Wien's law.
+\item The sampled spectrum increases before the peak and decreases after it, indicating the expected unimodal spectral shape.
+\end{itemize}
+
+Tests of this type are particularly valuable in scientific computing because they verify that the implementation produces physically plausible behavior over a range of inputs, rather than merely checking a single numerical value.
+
+In addition to verifying correctness of formulas and object-oriented behavior, it is also important to test whether a scientific software interface behaves consistently for both scalar and vector inputs.
+
+\subsection{Testing Scalar and Vector Consistency}
+
+In scientific Python programming, functions are often expected to work both for single scalar values and for arrays of values.  When such interfaces are provided, it is important to verify that both calling styles produce consistent results.  The following test checks exactly that behavior for the \texttt{Graybody} class.
+
+\vspace{0.5em}
+
+From \texttt{tests/test\_api\_types\_shapes.py}
+\inputminted[firstline=42,lastline=54]{python}{code/graybody/tests/test_api_types_shapes.py}
+
+\vspace{0.5em}
+
+This test constructs a \texttt{Graybody} object and evaluates its \texttt{radiance()} method in two different ways.  First, the method is called once using a NumPy array of wavelengths, producing a vector result.  Second, the same wavelengths are passed one at a time as scalar values, and the individual scalar results are collected into a NumPy array.  The test then compares these two results using \texttt{np.allclose()}.
+
+The purpose of this test is to verify that the implementation behaves consistently regardless of whether the input is supplied as a scalar or as a vector.  This is an important property in numerical software, because users often expect a function to support both forms naturally.  A mismatch between the vectorized and scalar forms can indicate subtle implementation errors, such as incorrect broadcasting, inconsistent return typing, or mistakes in special-case handling for scalar inputs.
+
+Thus, this test checks not only numerical correctness but also the reliability and consistency of the module's public interface.  In scientific software development, such tests are valuable because they help ensure that code behaves predictably in realistic workflows involving NumPy arrays.
+
+\section{Using \texttt{conftest.py} to Share Test Fixtures}
+
+As a test suite grows, it is common for multiple test files to require the same setup code. For example, many tests may need access to the module under test, or they may repeatedly construct the same classes and objects. Rather than duplicating that setup code in every test file, \texttt{pytest} allows shared fixtures to be placed in a special file named \texttt{conftest.py}. In a given test directory, \texttt{pytest} automatically discovers this file and makes its fixtures available to the tests in that directory and its subdirectories.
+
+In the \texttt{graybody} example used in this course, the
+\texttt{tests/conftest.py} file contains the following code:
+
+\begin{minted}{python}
+from __future__ import annotations
+
+import importlib
+import pytest
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# Adjust this to match your module name / import path.
+MODULE_UNDER_TEST = "graybody"  # e.g. "graybody" if graybody.py
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+@pytest.fixture(scope="session")
+def mod():
+    """Import the module under test once for the session."""
+    return importlib.import_module(MODULE_UNDER_TEST)
+
+@pytest.fixture()
+def Blackbody(mod):
+    return mod.Blackbody
+
+@pytest.fixture()
+def Graybody(mod):
+    return mod.Graybody
+\end{minted}
+
+This file does three important things.
+
+\subsection{\texttt{conftest.py} Centralizes Shared Setup}
+
+The first purpose of this file is to centralize test setup logic. Instead of having every test file independently import the module under test, the \texttt{mod()} fixture performs that task once in a single shared location. This improves maintainability: if the module name or import path changes, only the value of \texttt{MODULE\_UNDER\_TEST} needs to be updated. In this file, that variable is set to \texttt{"graybody"}, indicating that the test suite is written against a module with that import name.
+
+\subsection{The \texttt{mod} Fixture Imports the Module Under Test}
+
+The fixture
+
+\begin{minted}{python}
+@pytest.fixture(scope="session")
+def mod():
+    """Import the module under test once for the session."""
+    return importlib.import_module(MODULE_UNDER_TEST)
+\end{minted}
+
+defines a shared object named \texttt{mod}. The decorator \texttt{@pytest.fixture(scope="session")} tells \texttt{pytest} that this fixture should be created only once for the entire test session. Thus, all tests that request \texttt{mod} receive the same imported module object.
+
+This design is useful for two reasons. First, it avoids repeated import logic throughout the test suite. Second, it makes the tests a bit more flexible, because the actual module being tested is controlled by the \texttt{MODULE\_UNDER\_TEST} variable rather than being hard-coded into many different test files.
+
+The fixture uses \texttt{importlib.import\_module(MODULE\_UNDER\_TEST)} rather than a direct \texttt{import graybody} statement. This makes the import more dynamic and configurable. In other words, the test harness can determine the module name from a single variable and then import it programmatically.
+
+\subsection{The \texttt{Blackbody} and \texttt{Graybody} Fixtures Expose Class Names}
+
+The other two fixtures are
+
+\begin{minted}{python}
+@pytest.fixture()
+def Blackbody(mod):
+    return mod.Blackbody
+
+@pytest.fixture()
+def Graybody(mod):
+    return mod.Graybody
+\end{minted}
+
+These fixtures each depend on the \texttt{mod} fixture. Once the module has been imported, \texttt{Blackbody(mod)} returns the \texttt{Blackbody} class from that module, and \texttt{Graybody(mod)} returns the \texttt{Graybody} class.
+
+This is a subtle but elegant design choice. Instead of requiring every test file to include statements such as
+
+\begin{minted}{python}
+from graybody import Blackbody, Graybody
+\end{minted}
+
+the tests can simply request \texttt{Blackbody} or \texttt{Graybody} as fixture arguments. For example, a test function may be written as
+
+\begin{minted}{python}
+def test_something(Blackbody):
+    b = Blackbody(300.0)
+    ...
+\end{minted}
+
+When \texttt{pytest} sees the argument name \texttt{Blackbody}, it looks for a fixture with that name, calls it, and passes the returned class object into the test. This is one of the key conveniences of the fixture system: dependencies are expressed declaratively through function arguments.
+
+\subsection{Why This Pattern is Useful}
+
+This \texttt{conftest.py} file is small, but it demonstrates a very useful pattern for organizing tests:
+
+\begin{itemize}
+\item A single variable, \texttt{MODULE\_UNDER\_TEST}, identifies the module being tested.
+\item The \texttt{mod} fixture imports that module once for the full test run.
+\item The \texttt{Blackbody} and \texttt{Graybody} fixtures provide convenient access to the key classes defined in that module.
+\end{itemize}
+
+As a result, the individual test files become cleaner and easier to read. They can focus on behavior being tested rather than on repeated import and setup code.
+
+\subsection{A Note on \texttt{from \_\_future\_\_ import annotations}}
+
+The file begins with
+
+\begin{minted}{python}
+from __future__ import annotations
+\end{minted}
+
+In this particular file, that statement is not central to the fixture logic itself, but it is often included as a modern Python convention. It causes type annotations to be stored in a deferred form rather than being evaluated immediately. Even though this \texttt{conftest.py} file does not rely heavily on type hints, including the statement is harmless and keeps the file stylistically consistent with modern Python code.
+
+\subsection{Summary}
+
+The special \texttt{conftest.py} file allows \texttt{pytest} fixtures to be shared across multiple test modules. In the present example, it provides a clean mechanism for importing the \texttt{graybody} module once and exposing its \texttt{Blackbody} and \texttt{Graybody} classes to any test that needs them. This reduces duplication, improves maintainability, and makes the test functions themselves more concise and expressive.
+
+\subsection{Using Fixtures Defined in \texttt{conftest.py}}
+
+Once fixtures are defined in \texttt{conftest.py}, they can be used in any test function simply by including their names as arguments to the test. No explicit imports are required.
+
+For example, consider the following test:
+
+\begin{minted}{python}
+def test_blackbody_radiance_positive(Blackbody):
+    """Radiance should be positive for any physical wavelength."""
+
+    b = Blackbody(300.0)        # temperature in Kelvin
+    wavelength = 10.0           # microns
+
+    L = b.radiance(wavelength)
+
+    assert L > 0
+\end{minted}
+
+At first glance, it may appear that the test is missing an import statement such as
+
+\begin{minted}{python}
+from graybody import Blackbody
+\end{minted}
+
+However, this is handled automatically by \texttt{pytest}. When the test is executed, \texttt{pytest} sees that the test function has an argument named \texttt{Blackbody}. It then searches for a fixture with that name. Because the \texttt{tests/conftest.py} file defines the fixture
+
+\begin{minted}{python}
+@pytest.fixture()
+def Blackbody(mod):
+    return mod.Blackbody
+\end{minted}
+
+\texttt{pytest} calls that fixture and passes the returned class object into the test function.
+
+As a result, the name \texttt{Blackbody} inside the test refers to the \texttt{Blackbody} class defined in the module under test. The test can then construct objects and evaluate their behavior exactly as if the class had been imported normally.
+
+This approach keeps test files concise and eliminates repeated import and setup logic. Instead, the tests simply declare the resources they need, and \texttt{pytest} provides them automatically.
+
+\section{Summary}
+
+In this chapter we introduced the \texttt{pytest} framework and demonstrated how it can be used to test scientific Python modules in a clear and systematic way.  Using simple test functions and standard Python \texttt{assert} statements, \texttt{pytest} allows developers to verify that individual pieces of code behave as expected.
+
+Several examples illustrated how tests can be used in different ways.  Some tests compare the output of a function to a known analytical result, providing direct verification of a mathematical implementation.  Others verify correct behavior of object-oriented designs, such as ensuring that inherited methods use overridden implementations in derived classes.  In scientific software, tests may also take the form of physics-based sanity checks, confirming that a model produces physically reasonable behavior across a range of inputs.
+
+We also introduced the concept of fixtures and the special \texttt{conftest.py} file, which allow common setup code to be shared across a test suite.  By centralizing imports and commonly used objects, fixtures help keep individual test files concise and focused on the specific behavior being verified.
+
+Well-designed tests provide confidence that code continues to function correctly as it evolves.  This is especially important in scientific computing, where subtle numerical errors or unintended code changes can lead to incorrect results.  Incorporating automated tests into a project therefore represents an important step toward producing reliable, maintainable, and reproducible scientific software.
+
+In modern software development workflows, automated test suites are often executed automatically whenever code changes are committed to a repository. Tools such as GitHub Actions, GitLab CI, and other continuous integration systems can run the \texttt{pytest} test suite automatically and report whether all tests pass.  This practice helps ensure that new code changes do not introduce unintended errors and is increasingly common in both industrial and research software projects.
+
+Automated testing therefore forms an essential component of modern scientific software development, helping researchers maintain confidence that their code continues to produce correct results as it grows and evolves.
